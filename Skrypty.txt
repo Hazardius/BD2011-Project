@@ -1,0 +1,360 @@
+Name    MSSQL.wmi.amu.edu.pl (SQL Server 10.0.5500 - LABS\s362625)
+
+insert into Zawodnicy(nazwisko, wiek, kraj, zarobek)
+values('Koœciuszko', 18,'Polska', 200);
+
+insert into Zawodnicy(nazwisko, wiek, kraj, zarobek)
+values('Mambo', 15,'Mozambik', 600);
+
+insert into Zawodnicy(nazwisko, wiek, zarobek)
+values('Mambo', 21, 600);
+
+update Zawodnicy
+    set zarobek = (zarobek * 1.1)
+    where kraj = 'Polska'
+   
+select * from Stanowiska
+select * from Pracownicy
+select * from Projekty
+select * from Realizacje
+
+SELECT nazwisko, CAST((placa+ISNULL(dod_funkc,0))*12 as varchar)+' z³' as 'placa roczna' from Pracownicy
+
+SELECT nazwa, (Datediff(month,dataRozp,ISNULL(dataZakonczFakt,GETDATE()))) AS 'czas trwania' from Projekty
+
+SELECT * from Pracownicy where (stanowisko = 'adiunkt' OR stanowisko = 'doktorant')
+
+SELECT * from Pracownicy where szef is null
+
+/*Zadanie 5*/
+select p.nazwisko as 'pracownik', r.nazwisko as 'szef'
+from Pracownicy p join Pracownicy r
+on p.szef = r.id
+
+/*Zadanie 6*/
+select distinct r.nazwisko as 'szef'
+from Pracownicy p join Pracownicy r
+on p.szef = r.id
+
+/*Zadanie 7*/
+select p.nazwisko, q.nazwa
+from Pracownicy p join Realizacje r
+on p.id = r.idPrac
+join Projekty q
+on r.idProj = q.id
+order by p.nazwisko asc
+
+/*Zadanie 12*/
+select tab.szef, MIN(placa) as 'min', MAX(placa) as 'max'
+from (select p.placa as 'placa', r.id as 'szef'
+    from Pracownicy p join Pracownicy r
+    on p.szef = r.id) tab
+group by tab.szef
+
+/*Zadanie 13*/
+Select nazwisko
+from Pracownicy r
+where r.placa = (Select MAX(p.placa) from Pracownicy p)
+
+Niedokoñczone:
+/*Zadanie 14*/
+Select p.nazwisko, s.stanowisko
+from (Pracownicy p, (Select r.stanowisko
+                  from (Select stanowisko, MAX(placa) as 'placa'
+                        from Pracownicy s
+                        group by s.stanowisko) r
+                  group by r.stanowisko as 'stanowisko') s)
+where p.placa = r.placa
+
+/*Zadanie 17*/
+Select *
+from Pracownicy p1
+where (Select COUNT(*)
+      from Pracownicy p2
+      where p2.placa > p1.placa) <= 2
+
+/*Przyk³adowe Kolokwium*/
+/*Zadanie 1*/
+/*Podaj autorow spoza Polski; uporzadkuj alfabetycznie wedlug nazwisk*/
+Select *
+from autorzy
+where kraj <> 'Polska'
+Order by nazwisko asc
+
+/*Zadanie 2*/
+/*Podaj ksiazki zawierajace ci¹g 'XML' w tytule*/
+Select *
+from ksiazki
+where tytul like '%XML%'
+Order by tytul asc
+
+/*Zadanie 3*/
+/*Znajdz ksiazki drozsze od 'Fuzzy Logic'*/
+Select *
+from ksiazki
+where cena > (Select cena
+            from ksiazki
+            where tytul = 'Fuzzy Logic')
+
+/*Zadanie 4*/
+/*Podaj autorow ksiazek z informatyki (2 mietody - z³¹czenie i podzapytanie)*/
+Select distinct nazwisko
+from ksiazki join autorzy
+    on ksiazki.id_autor = autorzy.id_autor
+where ksiazki.dzial = 'informatyka'
+
+Select distinct nazwisko
+from autorzy a, (Select id_autor
+                 from ksiazki
+                 where dzial = 'informatyka') b
+where a.id_autor = b.id_autor
+
+select nazwisko
+from autorzy a
+where id_autor in
+      (select id_autor
+      from ksiazki
+      where dzial = 'informatyka')
+
+/*Zadanie 5*/
+/*Sprawdz, czy istniej autor piszacy ksiazki z tego samego rodzaju (dzialu) co Yen*/
+Select distinct a.nazwisko
+from (Select nazwisko, dzial
+      from ksiazki c inner join autorzy d
+          on c.id_autor = d.id_autor) a,
+     (Select distinct dzial
+      from ksiazki e join autorzy f
+          on e.id_autor = f.id_autor
+      where nazwisko = 'Yen') b
+where a.dzial = b.dzial
+
+select distinct a.nazwisko
+from autorzy a, ksiazki k
+where a.id_autor=k.id_autor
+and k.dzial = (select dzial
+                              from autorzy a2, ksiazki k2
+                              where a2.id_autor=k2.id_autor
+                              and a2.nazwisko = 'Yen')
+and a.nazwisko <> 'Yen'
+
+
+/*Zadanie 6*/
+/*Podaj ile jest ksiazek w kazdym z dzialow*/
+Select count(*) 'ilosc ksiazek', dzial
+from ksiazki
+group by dzial
+
+/*Zadanie 7*/
+/*Podaj srednia cene ksiazek Sapkowskiego*/
+Select AVG(cena) as 'Srednia cena ksiazek Sapkowskiego'
+from ksiazki join autorzy
+    on ksiazki.id_autor = autorzy.id_autor
+where nazwisko = 'Sapkowski'
+
+/*Zadanie 8*/
+/*Znajdz najtansza ksiazke z informatyki*/
+Select *
+from ksiazki
+where cena = (Select MIN(cena)
+             from ksiazki
+             where dzial = 'informatyka')
+and dzial = ‘informatyka’
+
+/*Zadanie 9*/
+/*Dla kazdego dzialu znajdz najtansza ksiazke*/
+Select a.tytul, b.dzial
+from ksiazki a, (Select MIN(cena) 'cena', dzial
+                from ksiazki
+                group by dzial) b
+where a.cena = b.cena
+
+/*Zadanie 10*/
+/*Podaj autorow, ktorzy napisali przynajmniej dwie ksiazki po roku 1996*/
+Select kurczak.nazwisko
+from (Select COUNT(*) 'liczba', nazwisko
+      from ksiazki join (Select distinct nazwisko, id_autor
+                         from autorzy) a
+          on ksiazki.id_autor = a.id_autor
+      where rok_wydania > '1996'
+      group by nazwisko) kurczak
+where (kurczak.liczba > 1)
+
+select a.nazwisko, COUNT(*)
+from ksiazki k join autorzy a
+on k.id_autor = a.id_autor
+where rok_wydania > 1996
+group by a.nazwisko
+having COUNT(*) >=2
+
+/*Zadanie 11*/
+/*Znajdz dzial, do ktorego pisze wiecej niz jeden autor*/
+Select kurczak.dzial
+from (Select COUNT(distinct id_autor) 'laut', dzial
+     from ksiazki
+     group by dzial) kurczak
+where (kurczak.laut > 1)
+
+select dzial, COUNT(distinct id_autor) licz_autorow
+from ksiazki
+group by dzial
+having COUNT(distinct id_autor) >1
+
+/*Zadanie 12*/
+/*Znajdz dzial o najwiekszej liczbie ksiazek*/
+/*£ukasz Zieliñski ver.*/
+select px.dzial
+from (select dzial, count(*) as liczba
+        from ksiazki
+        group by dzial) as px
+        where px.liczba = (select max(a.liczba) from (select dzial, count(*) as liczba
+                    from ksiazki
+                    group by dzial) as a)
+group by px.dzial
+
+select dzial
+from ksiazki
+group by dzial
+having COUNT(*) =
+      (select MAX(liczba)
+      from
+              (select dzial, COUNT(*) liczba
+              from ksiazki
+              group by dzial) as tab)
+
+/*Zadanie 13*/
+/*Sprawdz, czy istnieje autor piszacy ksiazki do kazdego z dzialow*/
+select nazwisko
+from autorzy a
+where not exists (select dzial
+              from ksiazki k1
+              where not exists (select *
+                              from ksiazki k2
+                              where k2.dzial = k1.dzial
+                              and k2.id_autor = a.id_autor)
+              )
+
+/*Zadanie 14*/
+/*Podaj autora, ktorego ksi¹¿ek nie ma w bazie (3 metodami: z³¹czenie, podzapytanie, exists) */
+select nazwisko
+from autorzy a left outer join ksiazki k
+on a.id_autor = k.id_autor
+where k.tytul is null
+
+select nazwisko
+from autorzy
+where id_autor not in (select id_autor from ksiazki)
+
+select nazwisko
+from autorzy a
+where not exists (select * from ksiazki k where a.id_autor = k.id_autor)
+
+/*Zaœmiecenie Bazy danych kopiami tabel*/
+Select table_name, IDENTITY(int,1,1) id
+into #tabele
+from INFORMATION_SCHEMA.TABLES
+where TABLE_SCHEMA = 'LABS\s362625'
+
+declare @i int
+declare @nazwa char(100)
+declare @zapytanie char(200)
+declare @max int
+
+set @max = (Select COUNT(*) from #tabele)
+
+set @i = 1
+while @i <= @max
+begin
+    set @nazwa = (Select table_name
+                 from #tabele
+                 where id = @i)
+    set @zapytanie = 'select * into kopia_' + @nazwa + ' from ' + @nazwa
+    exec sp_sqlexec @zapytanie
+       set @i = @i + 1
+end
+
+/*Wyœwietlenie tabel usera o nazwie s362625*/
+Select *
+from information_schema.tables
+where TABLE_SCHEMA = 'LABS\s362625'
+
+/*Tworzenie zmiennej*/
+declare @max money
+select @max=max(placa) from Pracownicy
+print @max
+go
+
+CREATE PROCEDURE przydziel_pracownika
+       @nr_prac int,
+       @nr_proj int,
+       @workhours int
+AS
+begin try
+    if not exists (select * from Pracownicy where id = @nr_prac)
+       raiserror ('Nie ma takiego pracownika!', 11, 1)
+    if not exists (select * from Projekty where id = @nr_proj)
+       raiserror ('Nie ma takiego projektu!', 11, 2)
+    if (@workhours is null)
+       set @workhours = 8
+    if (@workhours > 8)
+       raiserror ('Za du¿o godzin!', 11, 3)
+    if exists (select * from Projekty where ((id = @nr_proj) and (dataZakonczFakt is null)))
+    begin
+       if not exists (select * from Realizacje where (@nr_prac = idPrac) and (@nr_proj = idProj))
+           INSERT INTO Realizacje (idProj, idPrac, godzin) VALUES (@nr_proj, @nr_prac, @workhours)
+       else
+           raiserror ('Istnieje ju¿ ta realizacja(byæ mo¿e w innym wymiarze godzin)', 11, 4)
+    end
+    else
+       raiserror ('Projekt siê zakoñczy³.', 15, 5)
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+
+create function LICZ_LAT
+       (@data date)
+       returns int
+as
+begin
+    declare @dzis date
+    set @dzis = Current_Timestamp
+    declare @zwrot int
+    set @zwrot = 0
+    set @zwrot = YEAR(@dzis) - YEAR(@data)
+    if ((MONTH(@data) > MONTH(@dzis)) and (DAY(@data) > DAY(@dzis)))
+       set @zwrot = @zwrot - 1
+    return @zwrot
+end
+
+Select nazwisko, [LABS\s362625].LICZ_LAT(p.zatrudniony) as 'Lat od zatrudnienia'
+from Pracownicy p
+
+create function WETERANI
+       (@x int)
+       returns table
+as
+    return (Select nazwisko
+    from Pracownicy p where [LABS\s362625].LICZ_LAT(p.zatrudniony)> @x)
+
+create function KANDYDACI
+        (@nr_proj int)
+        returns @kandydaci table
+                (nazwisko varchar(20))
+as
+begin
+
+    insert into @kandydaci
+    Select nazwisko
+    from Pracownicy p
+    where (p.szef in (Select idPrac
+                  from Realizacje r
+                  where @nr_proj = r.idProj))
+          and ()
+    
+    Select nazwisko
+    from Pracownicy p
+    where p.id in (Select idPrac
+                  from Realizacje r
+                  where @nr_proj = r.idProj)
+return
+end
