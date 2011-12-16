@@ -1,7 +1,7 @@
 Name    MSSQL.wmi.amu.edu.pl (SQL Server 10.0.5500 - LABS\s362625)
 
 insert into Zawodnicy(nazwisko, wiek, kraj, zarobek)
-values('Koœciuszko', 18,'Polska', 200);
+values('Koï¿½ciuszko', 18,'Polska', 200);
 
 insert into Zawodnicy(nazwisko, wiek, kraj, zarobek)
 values('Mambo', 15,'Mozambik', 600);
@@ -18,7 +18,7 @@ select * from Pracownicy
 select * from Projekty
 select * from Realizacje
 
-SELECT nazwisko, CAST((placa+ISNULL(dod_funkc,0))*12 as varchar)+' z³' as 'placa roczna' from Pracownicy
+SELECT nazwisko, CAST((placa+ISNULL(dod_funkc,0))*12 as varchar)+' zï¿½' as 'placa roczna' from Pracownicy
 
 SELECT nazwa, (Datediff(month,dataRozp,ISNULL(dataZakonczFakt,GETDATE()))) AS 'czas trwania' from Projekty
 
@@ -56,7 +56,7 @@ Select nazwisko
 from Pracownicy r
 where r.placa = (Select MAX(p.placa) from Pracownicy p)
 
-Niedokoñczone:
+Niedokoï¿½czone:
 /*Zadanie 14*/
 Select p.nazwisko, s.stanowisko
 from (Pracownicy p, (Select r.stanowisko
@@ -73,7 +73,7 @@ where (Select COUNT(*)
       from Pracownicy p2
       where p2.placa > p1.placa) <= 2
 
-/*Przyk³adowe Kolokwium*/
+/*Przykï¿½adowe Kolokwium*/
 /*Zadanie 1*/
 /*Podaj autorow spoza Polski; uporzadkuj alfabetycznie wedlug nazwisk*/
 Select *
@@ -82,7 +82,7 @@ where kraj <> 'Polska'
 Order by nazwisko asc
 
 /*Zadanie 2*/
-/*Podaj ksiazki zawierajace ci¹g 'XML' w tytule*/
+/*Podaj ksiazki zawierajace ciï¿½g 'XML' w tytule*/
 Select *
 from ksiazki
 where tytul like '%XML%'
@@ -97,7 +97,7 @@ where cena > (Select cena
             where tytul = 'Fuzzy Logic')
 
 /*Zadanie 4*/
-/*Podaj autorow ksiazek z informatyki (2 mietody - z³¹czenie i podzapytanie)*/
+/*Podaj autorow ksiazek z informatyki (2 mietody - zï¿½ï¿½czenie i podzapytanie)*/
 Select distinct nazwisko
 from ksiazki join autorzy
     on ksiazki.id_autor = autorzy.id_autor
@@ -158,7 +158,7 @@ from ksiazki
 where cena = (Select MIN(cena)
              from ksiazki
              where dzial = 'informatyka')
-and dzial = ‘informatyka’
+and dzial = ï¿½informatykaï¿½
 
 /*Zadanie 9*/
 /*Dla kazdego dzialu znajdz najtansza ksiazke*/
@@ -201,7 +201,7 @@ having COUNT(distinct id_autor) >1
 
 /*Zadanie 12*/
 /*Znajdz dzial o najwiekszej liczbie ksiazek*/
-/*£ukasz Zieliñski ver.*/
+/*ï¿½ukasz Zieliï¿½ski ver.*/
 select px.dzial
 from (select dzial, count(*) as liczba
         from ksiazki
@@ -234,7 +234,7 @@ where not exists (select dzial
               )
 
 /*Zadanie 14*/
-/*Podaj autora, ktorego ksi¹¿ek nie ma w bazie (3 metodami: z³¹czenie, podzapytanie, exists) */
+/*Podaj autora, ktorego ksiï¿½ï¿½ek nie ma w bazie (3 metodami: zï¿½ï¿½czenie, podzapytanie, exists) */
 select nazwisko
 from autorzy a left outer join ksiazki k
 on a.id_autor = k.id_autor
@@ -248,7 +248,7 @@ select nazwisko
 from autorzy a
 where not exists (select * from ksiazki k where a.id_autor = k.id_autor)
 
-/*Zaœmiecenie Bazy danych kopiami tabel*/
+/*Zaï¿½miecenie Bazy danych kopiami tabel*/
 Select table_name, IDENTITY(int,1,1) id
 into #tabele
 from INFORMATION_SCHEMA.TABLES
@@ -272,7 +272,7 @@ begin
        set @i = @i + 1
 end
 
-/*Wyœwietlenie tabel usera o nazwie s362625*/
+/*Wyï¿½wietlenie tabel usera o nazwie s362625*/
 Select *
 from information_schema.tables
 where TABLE_SCHEMA = 'LABS\s362625'
@@ -296,16 +296,16 @@ begin try
     if (@workhours is null)
        set @workhours = 8
     if (@workhours > 8)
-       raiserror ('Za du¿o godzin!', 11, 3)
+       raiserror ('Za duï¿½o godzin!', 11, 3)
     if exists (select * from Projekty where ((id = @nr_proj) and (dataZakonczFakt is null)))
     begin
        if not exists (select * from Realizacje where (@nr_prac = idPrac) and (@nr_proj = idProj))
            INSERT INTO Realizacje (idProj, idPrac, godzin) VALUES (@nr_proj, @nr_prac, @workhours)
        else
-           raiserror ('Istnieje ju¿ ta realizacja(byæ mo¿e w innym wymiarze godzin)', 11, 4)
+           raiserror ('Istnieje juï¿½ ta realizacja(byï¿½ moï¿½e w innym wymiarze godzin)', 11, 4)
     end
     else
-       raiserror ('Projekt siê zakoñczy³.', 15, 5)
+       raiserror ('Projekt siï¿½ zakoï¿½czyï¿½.', 15, 5)
 end try
 begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
@@ -358,3 +358,32 @@ begin
                   where @nr_proj = r.idProj)
 return
 end
+
+Zadania TRIGGERY
+Zadanie 1
+
+create trigger zadanie10_1
+on Pracownicy
+for update
+as
+if Exists (Select *
+    from inserted a, deleted b
+    where (a.id = b.id) and (a.placa < b.placa))
+begin
+    rollback
+end
+go
+
+Zadanie 2
+
+create trigger zadanie10_2
+on Pracownicy
+for update
+as
+UPDATE Pracownicy
+set placa = placa + (Select (a.placa-b.placa)
+                     from inserted a, deleted b
+                     where a.id = b.id)
+where szef = (Select id
+              from inserted)
+go
