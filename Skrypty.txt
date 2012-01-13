@@ -409,3 +409,27 @@ select *
 from Pracownicy
 where nazwisko = 'Jankowski'
 commit tran T2
+
+/*
+Wygeneruj następującą anomalię powtórnego czytania:
+ T1 odczytuje pensję Jankowskiego; T2 podnosi pensję 
+ Jankowskiego i się zatwierdza; T1 ponownie odczytuje
+ pensje Jankowskiego i się zatwierdza. 
+*/
+/* T1 *//*to jako 2*/
+begin tran T1
+update Pracownicy
+set placa = placa*1.1
+where stanowisko = 'adiunkt'
+
+commit tran T1
+/* T2 */
+
+set transaction isolation level REPEATABLE READ
+ 
+begin tran T2
+/*wpierw to 1*/
+select *
+from Pracownicy
+where nazwisko = 'Jankowski'
+commit tran T2
