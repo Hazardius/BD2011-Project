@@ -387,3 +387,25 @@ set placa = placa + (Select (a.placa-b.placa)
 where szef = (Select id
               from inserted)
 go
+
+
+/*Wygeneruj następującą anomalię "brudnego czytania":
+ T1 podnosi pensje adiunktom; T2 odczytuje pensję Jankowskiego
+ i się zatwierdza; T1 się wycofuje. 
+*/
+/* T1 */
+begin tran T1
+update Pracownicy
+set placa = placa*1.1
+where stanowisko = 'adiunkt'
+
+rollback tran T1
+/* T2 */
+
+set transaction isolation level READ UNCOMMITTED
+ 
+begin tran T2
+select *
+from Pracownicy
+where nazwisko = 'Jankowski'
+commit tran T2
