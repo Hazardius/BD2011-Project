@@ -21,8 +21,7 @@ create table Klienci
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(40),
 data_urodzenia datetime,
-portfel int references SteamWallet(id) unique,
-check (haslo>8));
+portfel int references SteamWallet(id) unique);
 
 create table Znajomosci
 (znajomy1 int references Klienci(steamid),
@@ -42,32 +41,44 @@ create table Czlonkostwa
 (klient int references Klienci(steamid),
 grupa varchar(50) references Grupy(nazwa));
 
+create table Produkty
+(id int not null primary key,
+nazwa varchar(40) not null unique,
+cena money,
+wielkosc int not null,
+opis varchar(400),
+check (wielkosc > 0));
+
+create table OST
+(id int references Produkty(id) primary key);
+
+create table Utwory
+(tytul varchar(40) not null primary key,
+autor varchar(40),
+dlugosc int,
+wielkosc int,
+album int references OST(id),
+check (wielkosc > 0),
+check (dlugosc > 0));
+
+create table Gry
+(id int references Produkty(id) primary key,
+ost int references OST(id));
+
+create table DLC
+(id int references Produkty(id) primary key,
+gra int references Gry(id),
+ost int references OST(id));
+
+create table SDK
+(id int references Produkty(id) primary key,
+wersja varchar(10));
+
 create table Osiagniecia
 (id int not null primary key,
 nazwa varchar(50) not null,
 opis varchar(100),
-idProd int);
-
-(nazwisko varchar(20) not null,
-szef int references Pracownicy(id),
-placa money,
-dod_funkc money,
-stanowisko varchar(10) references Stanowiska(nazwa),
-zatrudniony datetime);
-
-create table Projekty
-(id int identity(10,10) not null primary key,
-nazwa varchar(20) not null unique,
-dataRozp datetime not null,
-dataZakonczPlan datetime not null,
-dataZakonczFakt datetime null,
-kierownik int references Pracownicy(id),
-stawka money);
-
-create table Realizacje
-(idProj int references Projekty(id),
-idPrac int references Pracownicy(id),
-godzin real default 8);
+idProd int references Produkty(id) not null);
 
 GO
 
