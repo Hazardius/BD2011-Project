@@ -12,19 +12,41 @@ GO
 
 --------- CREATE
 
+create table SteamWallet
+(id int not null primary key,
+kwota money default 0);
+
 create table Klienci
 (steamid int not null primary key,
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(40),
 data_urodzenia datetime,
+portfel int references SteamWallet(id) unique,
 check (haslo>8));
 
+create table Znajomosci
+(znajomy1 int references Klienci(steamid),
+znajomy2 int references Klienci(steamid));
 
-create table SteamWallet
+create table Transakcje
 (id int not null primary key,
-kwota money,
-wlasciciel int references Klienci(steamid) unique)
+data datetime,
+kwota_laczna money,
+zleceniodawca int references Klienci(steamid) not null);
 
+create table Grupy
+(nazwa varchar(50) not null primary key,
+opis varchar(400));
+
+create table Czlonkostwa
+(klient int references Klienci(steamid),
+grupa varchar(50) references Grupy(nazwa));
+
+create table Osiagniecia
+(id int not null primary key,
+nazwa varchar(50) not null,
+opis varchar(100),
+idProd int);
 
 (nazwisko varchar(20) not null,
 szef int references Pracownicy(id),
