@@ -12,16 +12,21 @@ GO
 
 --------- CREATE
 
-create table Stanowiska
-(nazwa varchar(10) primary key,
-placa_min money,
-placa_max money,
-check (placa_min<placa_max));
+create table Klienci
+(steamid int not null primary key,
+nazwa_wyswietlana varchar(40) not null,
+haslo varchar(40),
+data_urodzenia datetime,
+check (haslo>8));
 
 
-create table Pracownicy
+create table SteamWallet
 (id int not null primary key,
-nazwisko varchar(20) not null,
+kwota money,
+wlasciciel int references Klienci(steamid) unique)
+
+
+(nazwisko varchar(20) not null,
 szef int references Pracownicy(id),
 placa money,
 dod_funkc money,
