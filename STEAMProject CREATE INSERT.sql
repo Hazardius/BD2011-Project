@@ -22,7 +22,8 @@ create table Klienci
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(64),
 data_urodzenia datetime,
-portfel int references SteamWallet(id) unique);
+portfel int references SteamWallet(id) unique,
+check (Len(haslo) = 64));
 
 create table Znajomosci
 (znajomy1 int references Klienci(steamid),
@@ -45,7 +46,7 @@ grupa varchar(50) references Grupy(nazwa));
 create table Produkty
 (id int not null primary key,
 nazwa varchar(40) not null unique,
-cena money,
+cena money not null,
 wielkosc int not null,
 opis varchar(400),
 check (wielkosc > 0));
@@ -57,7 +58,7 @@ create table Utwory
 (tytul varchar(40) not null primary key,
 autor varchar(40),
 dlugosc int,
-wielkosc int,
+wielkosc int not null,
 album int references OST(id),
 check (wielkosc > 0),
 check (dlugosc > 0));
@@ -107,7 +108,125 @@ GO
 
 ---------- TU BĘDĄ FUNKCJE DODAJĄCE I USUWAJĄCE
 
---nic na razie nie ma :(
+create procedure dodaj_SDK
+       @nazwa varchar(40),
+       @cena money,
+       @wielkosc int,
+       @opis varchar(400),
+       @wersja varchar(10)
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy!', 11, 1)
+    if (@cena is null)
+        set @cena = 0
+    if (@wielkosc is null)
+        raiserror ('Nie podano wielkosci pliku!', 11, 2)
+    if exists (select * from Produkty where (nazwa = @nazwa))
+    begin
+       raiserror ('Istnieje już produkt o tej nazwie!', 11, 3)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = RAND(@wielkosc)
+        while exists (select * from Produkty where (id = @idek))
+        begin
+            set @idek = RAND(@wielkosc)
+        end
+        insert into Produkty(id, nazwa, cena, wielkosc, opis)
+        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        insert into SDK(id, wersja)
+        values (@idek, @wersja)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_OST
+       @nazwa varchar(40),
+       @cena money,
+       @wielkosc int,
+       @opis varchar(400),
+       @tytulPierwszegoUtworu varchar(40),
+       @autor varchar(40),
+       @dlugosc int,
+       @wielkoscSciezki int
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy!', 11, 1)
+    if (@cena is null)
+        set @cena = 0
+    if (@wielkosc is null)
+        raiserror ('Nie podano wielkosci pliku!', 11, 2)
+    if exists (select * from Produkty where (nazwa = @nazwa))
+    begin
+       raiserror ('Istnieje już produkt o tej nazwie!', 11, 3)
+    end
+    if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
+    begin
+       raiserror ('Istnieje już utwor o tej nazwie!', 11, 4)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = RAND(@wielkosc)
+        while exists (select * from Produkty where (id = @idek))
+        begin
+            set @idek = RAND(@wielkosc)
+        end
+        insert into Produkty(id, nazwa, cena, wielkosc, opis)
+        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        insert into OST(id)
+        values (@idek)
+        insert into Utwory(tytul, autor, dlugosc, wielkosc, album)
+        values (@tytulPierwszegoUtworu, @autor, @dlugosc, @wielkoscSciezki, @idek)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_Gre
+       @nazwa varchar(40),
+       @cena money,
+       @wielkosc int,
+       @opis varchar(400),
+       @ost int
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy!', 11, 1)
+    if (@cena is null)
+        set @cena = 0
+    if (@wielkosc is null)
+        raiserror ('Nie podano wielkosci pliku!', 11, 2)
+    if exists (select * from Produkty where (nazwa = @nazwa))
+    begin
+       raiserror ('Istnieje już produkt o tej nazwie!', 11, 3)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = RAND(@wielkosc)
+        while exists (select * from Produkty where (id = @idek))
+        begin
+            set @idek = RAND(@wielkosc)
+        end
+        insert into Produkty(id, nazwa, cena, wielkosc, opis)
+        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        insert into Gry(id, ost)
+        values (@idek, @ost)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
 
 ---------- INSERT (Dodanie kilku przykładowych wartości na początek)
 
