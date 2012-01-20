@@ -11,7 +11,7 @@ SET LANGUAGE polski
 GO
 
 --------- CREATE (Utworzenie podstawy bazy danych, czyli tabel
---------- i kilku zale¿noœci miêdzy nimi)
+--------- i kilku zaleÅ¼noÅ›ci miÄ™dzy nimi)
 
 create table SteamWallet
 (id int not null primary key,
@@ -20,7 +20,7 @@ kwota money default 0);
 create table Klienci
 (steamid int not null primary key,
 nazwa_wyswietlana varchar(40) not null,
-haslo varchar(40),
+haslo varchar(64),
 data_urodzenia datetime,
 portfel int references SteamWallet(id) unique);
 
@@ -105,11 +105,11 @@ transakcja int references Transakcje(id));
 
 GO
 
----------- TU BÊD¥ FUNKCJE DODAJ¥CE I USUWAJ¥CE
+---------- TU BÄ˜DÄ„ FUNKCJE DODAJÄ„CE I USUWAJÄ„CE
 
 --nic na razie nie ma :(
 
----------- INSERT (Dodanie kilku przyk³adowych wartoœci na pocz¹tek)
+---------- INSERT (Dodanie kilku przykÅ‚adowych wartoÅ›ci na poczÄ…tek)
 
 insert into Produkty
 values ('profesor', 3000, 5000);
@@ -117,8 +117,8 @@ values ('profesor', 3000, 5000);
 insert into Pracownicy
 values(1, 'Wachowiak', null, 4500, 900, 'profesor', '01-09-1980');
 
------------- SELECT (Pokazanie zawartoœci naszej bazy)
------------- Na razie za pomoc¹ selectów. PóŸniej wykorzystamy funkcje!
+------------ SELECT (Pokazanie zawartoÅ›ci naszej bazy)
+------------ Na razie za pomocÄ… selectÃ³w. PÃ³Åºniej wykorzystamy funkcje!
 
 select * from Czlonkostwa
 select * from DLC
