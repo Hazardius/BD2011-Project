@@ -21,7 +21,7 @@ create table Klienci
 (steamid int not null primary key,
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(64) not null,
-data_urodzenia datetime,
+data_urodzenia date,
 portfel int references SteamWallet(id) unique,
 check (Len(haslo) = 64));
 
@@ -314,7 +314,7 @@ GO
 create procedure dodaj_Klienta
        @nazwa_wyswietlana varchar(40),
        @haslo varchar(64),
-       @data_urodzenia datetime
+       @data_urodzenia date
 AS
 begin try
     if (@nazwa_wyswietlana is null)
@@ -325,17 +325,17 @@ begin try
         raiserror ('Podana nazwa jest za krotka!', 11, 3)
     if (18 > DATEDIFF(yyyy,@data_urodzenia,CURRENT_TIMESTAMP))
         raiserror ('Uzytkownik ma ponizej 18 lat!', 11, 4)
-    if exists (select * from Klienci where (steamid = @nazwa_wyswietlana))
+    if exists (select * from Klienci where (nazwa_wyswietlana = @nazwa_wyswietlana))
     begin
        raiserror ('Istnieje już uzytkownik o tej nazwie!', 11, 5)
     end
     else
     begin
         declare @idek int
-        set @idek = RAND(@haslo)
+        set @idek = RAND(@data_urodzenia)
         while exists (select * from Klienci where (steamid = @idek))
         begin
-            set @idek = RAND(@haslo)
+            set @idek = RAND(@data_urodzenia)
         end
         insert into Klienci(steamid,nazwa_wyswietlana,haslo,data_urodzenia)
         values (@idek,@nazwa_wyswietlana,@haslo,@data_urodzenia)
@@ -469,8 +469,11 @@ GO
 
 ---------- INSERT (Dodanie kilku przykładowych wartości na początek)
 
-insert into Produkty
-values ('profesor', 3000, 5000);
+exec dodaj_Klienta 'Klient_1', '1234567890123456789012345678901234567890123456789012345678901234', '19890223'
+exec dodaj_Klienta 'Klient_2', '1234567890123456789012345678901234567890123456789012345678901234', '19700304'
+exec dodaj_Klienta 'Klient_3', '1234567890123456789012345678901234567890123456789012345678901234', '19900406'
+exec dodaj_Klienta 'Klient_4', '1234567890123456789012345678901234567890123456789012345678901234', '19831212'
+exec dodaj_Klienta 'Klient_5', '1234567890123456789012345678901234567890123456789012345678901234', '19500605'
 
 insert into Pracownicy
 values(1, 'Wachowiak', null, 4500, 900, 'profesor', '01-09-1980');
