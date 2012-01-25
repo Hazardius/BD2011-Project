@@ -1,5 +1,5 @@
---drop DATABASE Steam
---GO
+drop DATABASE Steam
+GO
 
 CREATE DATABASE Steam
 GO
@@ -34,7 +34,8 @@ create table Transakcje
 (id int not null primary key,
 data datetime,
 kwota_laczna money,
-zleceniodawca int references Klienci(steamid) not null);
+idZleceniodawcy int references Klienci(steamid),
+zleceniodawca varchar(40));
 
 create table Grupy
 (nazwa varchar(50) not null primary key,
@@ -297,12 +298,47 @@ begin try
     end
     if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
     begin
-       raiserror ('Istnieje już utwor o tej nazwie!', 11, 5)
+       raiserror ('Istnieje już utwor o tej nazwie!', 11, 6)
     end
     else
     begin
         insert into Utwory(tytul, autor, dlugosc, wielkosc, album)
         values (@tytulPierwszegoUtworu, @autor, @dlugosc, @wielkoscSciezki, @album)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_Klienta
+       @nazwa_wyswietlana varchar(40),
+       @haslo varchar(64),
+       @data_urodzenia datetime
+AS
+begin try
+    if (@nazwa_wyswietlana is null)
+        raiserror ('Nie podano nazwy uzytkownika!', 11, 1)
+    if (@haslo is null)
+        raiserror ('Nie podano hasla!', 15, 2)
+    if (LEN(@nazwa_wyswietlana) < 8)
+        raiserror ('Podana nazwa jest za krotka!', 11, 3)
+    if (18 > DATEDIFF(yyyy,@data_urodzenia,CURRENT_TIMESTAMP))
+        raiserror ('Uzytkownik ma ponizej 18 lat!', 11, 4)
+    if exists (select * from Klienci where (steamid = @nazwa_wyswietlana))
+    begin
+       raiserror ('Istnieje już uzytkownik o tej nazwie!', 11, 5)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = RAND(@haslo)
+        while exists (select * from Produkty where (id = @idek))
+        begin
+            set @idek = RAND(@haslo)
+        end
+        insert into Klienci(steamid,nazwa_wyswietlana,haslo,data_urodzenia)
+        values (@idek,@nazwa_wyswietlana,@haslo,@data_urodzenia)
     end
 end try
 begin catch
