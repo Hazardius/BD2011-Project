@@ -381,6 +381,92 @@ begin catch
 end catch
 GO
 
+create procedure dodaj_Grupe
+       @zalozyciel int,
+       @nazwa varchar(50),
+       @opis varchar(400)
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy grupy!', 11, 1)
+    if not exists (select * from Klienci where (@zalozyciel = steamid))
+    begin
+       raiserror ('Nie istnieje zalozyciel tej grupy! Niepoprawne steamid!', 11, 2)
+    end
+    else
+    begin
+        insert into Grupy(nazwa,opis)
+        values (@nazwa,@opis)
+        insert into Czlonkostwa(klient, grupa)
+        values (@zalozyciel,@nazwa)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_Czlonka_Grupy
+       @steamid int,
+       @nazwa varchar(50)
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy grupy!', 11, 1)
+    if (@steamid is null)
+        raiserror ('Nie podano steamid uzytkownika!', 11, 2)
+    if not exists (select * from Klienci where (@steamid = steamid))
+    begin
+       raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 3)
+    end
+    if not exists (select * from Grupy where (@nazwa = nazwa))
+    begin
+       raiserror ('Nie istnieje taka grupa!', 11, 4)
+    end
+    else
+    begin
+        insert into Czlonkostwa(klient, grupa)
+        values (@steamid,@nazwa)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_Znajomosc
+       @steamidProszacego int,
+       @steamidPrzyjmujacego int
+AS
+begin try
+    if (@steamidProszacego = @steamidPrzyjmujacego)
+        raiserror ('Forever Alone! Nie mozna dodac do znajomych samego siebie', 11, 1)
+    if (@steamidProszacego is null)
+        raiserror ('Nie podano uzytkownika proszacego o znajomosc!', 11, 2)
+    if (@steamidPrzyjmujacego is null)
+        raiserror ('Nie podano uzytkownika przyjmujacego do znajomych!', 11, 3)
+    if not exists (select * from Klienci
+        where (@steamidProszacego = steamid OR @steamidPrzyjmujacego = steamid))
+    begin
+       raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 4)
+    end
+    if exists (select * from Znajomosci
+        where ((@steamidProszacego = znajomy1 AND @steamidPrzyjmujacego = znajomy2)
+        OR (@steamidProszacego = znajomy2 AND @steamidPrzyjmujacego = znajomy1)))
+    begin
+       raiserror ('Jestescie juz znajomymi!', 11, 5)
+    end
+    else
+    begin
+        insert into Znajomosci(znajomy1, znajomy2)
+        values (@steamidProszacego, @steamidPrzyjmujacego)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
 ---------- INSERT (Dodanie kilku przykładowych wartości na początek)
 
 insert into Produkty
