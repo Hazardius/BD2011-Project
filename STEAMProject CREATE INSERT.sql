@@ -333,12 +333,47 @@ begin try
     begin
         declare @idek int
         set @idek = RAND(@haslo)
-        while exists (select * from Produkty where (id = @idek))
+        while exists (select * from Klienci where (steamid = @idek))
         begin
             set @idek = RAND(@haslo)
         end
         insert into Klienci(steamid,nazwa_wyswietlana,haslo,data_urodzenia)
         values (@idek,@nazwa_wyswietlana,@haslo,@data_urodzenia)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_Osiagniecie
+       @nazwa varchar(50),
+       @opis varchar(100),
+       @id_prod int
+AS
+begin try
+    if (@nazwa is null)
+        raiserror ('Nie podano nazwy osiagniecia!', 11, 1)
+    if (@id_prod is null)
+        raiserror ('Nie podano produktu docelowego!', 11, 2)
+    if not exists (select * from Produkty where (@id_prod = id))
+    begin
+       raiserror ('Nie istnieje wybrany produkt!', 11, 3)
+    end
+    if exists (select * from Osiagniecia where (nazwa = @nazwa AND @id_prod = idProd))
+    begin
+       raiserror ('Istnieje już osiagniecie o tej nazwie dla wybranej gry!', 11, 4)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = RAND(@id_prod)
+        while exists (select * from Osiagniecia where (id = @idek))
+        begin
+            set @idek = RAND(@id_prod)
+        end
+        insert into Osiagniecia(id, nazwa, opis, idProd)
+        values (@idek,@nazwa,@opis,@id_prod)
     end
 end try
 begin catch
