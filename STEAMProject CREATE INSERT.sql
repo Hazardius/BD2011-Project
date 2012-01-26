@@ -91,7 +91,8 @@ create table Posiadania
 wlasciciel int references Klienci(steamid) not null);
 
 create table ObiektyNaWishlist
-(produkt int references Produkty(id),
+(id int not null primary key,
+produkt int references Produkty(id),
 autorWishlisty int references Klienci(steamid),
 priorytet int not null,
 check (priorytet > -1));
@@ -533,13 +534,42 @@ begin try
         values (@idek, CURRENT_TIMESTAMP, @cena_pierwszego, @kupujacy)
         
         declare @idek1 int
-        set @idek1 = 1000000 * RAND(@steamidKupujacego + @idProduktu)
-        while exists (select * from Transakcje where (id = @idek))
+        set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
+        while exists (select * from PozycjeTransakcji where (id = @idek))
         begin
-            set @idek1 = 1000000 * RAND(@steamidKupujacego + @idProduktu)
+            set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
         end
         insert into PozycjeTransakcji(id, produkt, transakcja)
         values (@idek1, @idProduktu, @idek)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure zmien_Transakcje
+        @dodanaCena money,
+        @idTransakcji int
+AS
+begin try
+    if (@dodanaCena is null)
+        raiserror ('Nie podano dodanej ceny!', 11, 1)
+    if (@idTransakcji is null)
+        raiserror ('Nie podano id Transakcji!', 11, 2)
+    if not exists (select * from Transakcje
+        where (@idTransakcji = id))
+    begin
+       raiserror ('Nie istnieje taka transakcja!', 11, 3)
+    end
+    else
+    begin
+        declare @nowaSumaCen money
+        set @nowaSumaCen = @dodanaCena + (Select kwota_laczna from Transakcje where @idTransakcji = id)
+
+        update Transakcje
+        set kwota_laczna = @nowaSumaCen
+        where @idTransakcji = id
     end
 end try
 begin catch
@@ -559,13 +589,18 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = 1000000 * RAND(@idTransakcji + @idProduktu)
+        set @idek = 10000000 * RAND(@idTransakcji + @idProduktu)
         while exists (select * from PozycjeTransakcji where (id = @idek))
         begin
-            set @idek = 1000000 * RAND(@idTransakcji + @idProduktu)
+            set @idek = 10000000 * RAND(@idTransakcji + @idProduktu)
         end
         insert into PozycjeTransakcji(id, produkt, transakcja)
         values (@idek, @idProduktu, @idTransakcji)
+        
+        declare @cena money
+        set @cena = (select cena from Produkty where id = @idProduktu)
+        
+        exec zmien_Transakcje @cena, @idTransakcji
     end
 end try
 begin catch
