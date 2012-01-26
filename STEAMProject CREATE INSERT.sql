@@ -13,17 +13,17 @@ GO
 --------- CREATE (Utworzenie podstawy bazy danych, czyli tabel
 --------- i kilku zależności między nimi)
 
-create table SteamWallet
-(id int not null primary key,
-kwota money default 0);
-
 create table Klienci
 (steamid int not null primary key,
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(64) not null,
 data_urodzenia date,
-portfel int references SteamWallet(id) unique,
 check (Len(haslo) = 64));
+
+create table SteamWallet
+(id int not null primary key,
+wlasciciel int references Klienci(steamid) unique not null,
+kwota money default 0);
 
 create table Znajomosci
 (znajomy1 int references Klienci(steamid) not null,
@@ -332,10 +332,12 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = RAND(@data_urodzenia)
+        set @idek = 1000000 *
+            RAND(YEAR(@data_urodzenia)+MONTH(@data_urodzenia)+DAY(@data_urodzenia))
         while exists (select * from Klienci where (steamid = @idek))
         begin
-            set @idek = RAND(@data_urodzenia)
+            set @idek = 1000000 *
+                RAND(YEAR(@data_urodzenia)+MONTH(@data_urodzenia)+DAY(@data_urodzenia))
         end
         insert into Klienci(steamid,nazwa_wyswietlana,haslo,data_urodzenia)
         values (@idek,@nazwa_wyswietlana,@haslo,@data_urodzenia)
