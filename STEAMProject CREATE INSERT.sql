@@ -14,7 +14,7 @@ GO
 --------- i kilku zależności między nimi)
 
 create table Klienci
-(steamid int not null primary key,
+(steamid int IDENTITY(1,1) primary key,
 nazwa_wyswietlana varchar(40) not null,
 haslo varchar(64) not null,
 data_urodzenia date,
@@ -30,7 +30,7 @@ znajomy2 int references Klienci(steamid) not null,
 check (znajomy1 != znajomy2));
 
 create table Transakcje
-(id int not null primary key,
+(id int IDENTITY(1,1) primary key,
 data datetime,
 kwota_laczna money,
 zleceniodawca varchar(40));
@@ -44,7 +44,7 @@ create table Czlonkostwa
 grupa varchar(50) references Grupy(nazwa));
 
 create table Produkty
-(id int not null primary key,
+(id int IDENTITY(1,1) primary key,
 nazwa varchar(40) not null unique,
 cena money not null,
 wielkosc int not null,
@@ -77,7 +77,7 @@ create table SDK
 wersja varchar(10));
 
 create table Osiagniecia
-(id int not null primary key,
+(id int IDENTITY(1,1) primary key,
 nazwa varchar(50) not null,
 opis varchar(100),
 idProd int references Produkty(id) not null);
@@ -91,14 +91,14 @@ create table Posiadania
 wlasciciel int references Klienci(steamid) not null);
 
 create table ObiektyNaWishlist
-(id int not null primary key,
+(id int IDENTITY(1,1) primary key,
 produkt int references Produkty(id),
 autorWishlisty int references Klienci(steamid),
 priorytet int not null,
 check (priorytet > -1));
 
 create table PozycjeTransakcji
-(id int not null primary key,
+(id int IDENTITY(1,1) primary key,
 produkt int references Produkty(id),
 transakcja int references Transakcje(id));
 
@@ -126,14 +126,12 @@ begin try
     end
     else
     begin
+        insert into Produkty(nazwa, cena, wielkosc, opis)
+        values (@nazwa, @cena, @wielkosc, @opis)
+        
         declare @idek int
-        set @idek = 1000000 * RAND(@wielkosc)
-        while exists (select * from Produkty where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@wielkosc)
-        end
-        insert into Produkty(id, nazwa, cena, wielkosc, opis)
-        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+        
         insert into SDK(id, wersja)
         values (@idek, @wersja)
     end
@@ -174,16 +172,15 @@ begin try
     end
     else
     begin
+        insert into Produkty(nazwa, cena, wielkosc, opis)
+        values (@nazwa, @cena, @wielkosc, @opis)
+        
         declare @idek int
-        set @idek = 1000000 * RAND(@wielkosc)
-        while exists (select * from Produkty where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@wielkosc)
-        end
-        insert into Produkty(id, nazwa, cena, wielkosc, opis)
-        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+        
         insert into OST(id)
         values (@idek)
+
         insert into Utwory(tytul, autor, dlugosc, wielkosc, album)
         values (@tytulPierwszegoUtworu, @autor, @dlugosc, @wielkoscSciezki, @idek)
     end
@@ -213,15 +210,12 @@ begin try
     end
     else
     begin
+        insert into Produkty(nazwa, cena, wielkosc, opis)
+        values (@nazwa, @cena, @wielkosc, @opis)
+
         declare @idek int
-        set @idek = 1000000 * RAND(@wielkosc)
-        while exists (select * from Produkty where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@wielkosc)
-        end
-        insert into Produkty(id, nazwa, cena, wielkosc, opis)
-        values (@idek, @nazwa, @cena, @wielkosc, @opis)
-        
+        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+
         if (@ost is not null)
         begin
             insert into Gry(id, ost)
@@ -266,14 +260,12 @@ begin try
     end
     else
     begin
+        insert into Produkty(nazwa, cena, wielkosc, opis)
+        values (@nazwa, @cena, @wielkosc, @opis)
+
         declare @idek int
-        set @idek = 1000000 * RAND(@wielkosc)
-        while exists (select * from Produkty where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@wielkosc)
-        end
-        insert into Produkty(id, nazwa, cena, wielkosc, opis)
-        values (@idek, @nazwa, @cena, @wielkosc, @opis)
+        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+
         insert into DLC(id, gra, ost)
         values (@idek, @gra, @ost)
     end
@@ -338,16 +330,8 @@ begin try
     end
     else
     begin
-        declare @idek int
-        set @idek = 1000000 *
-            RAND(YEAR(@data_urodzenia)+MONTH(@data_urodzenia)+DAY(@data_urodzenia))
-        while exists (select * from Klienci where (steamid = @idek))
-        begin
-            set @idek = 1000000 *
-                RAND(YEAR(@data_urodzenia)+MONTH(@data_urodzenia)+DAY(@data_urodzenia))
-        end
-        insert into Klienci(steamid,nazwa_wyswietlana,haslo,data_urodzenia)
-        values (@idek,@nazwa_wyswietlana,@haslo,@data_urodzenia)
+        insert into Klienci(nazwa_wyswietlana,haslo,data_urodzenia)
+        values (@nazwa_wyswietlana,@haslo,@data_urodzenia)
     end
 end try
 begin catch
@@ -399,14 +383,8 @@ begin try
     end
     else
     begin
-        declare @idek int
-        set @idek = 1000000 * RAND(@id_prod)
-        while exists (select * from Osiagniecia where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@id_prod)
-        end
-        insert into Osiagniecia(id, nazwa, opis, idProd)
-        values (@idek,@nazwa,@opis,@id_prod)
+        insert into Osiagniecia(nazwa, opis, idProd)
+        values (@nazwa,@opis,@id_prod)
     end
 end try
 begin catch
@@ -520,27 +498,20 @@ begin try
     end
     else
     begin
-        declare @idek int
-        set @idek = 1000000 * RAND(@steamidKupujacego + @idProduktu)
-        while exists (select * from Transakcje where (id = @idek))
-        begin
-            set @idek = 1000000 * RAND(@steamidKupujacego + @idProduktu)
-        end
         declare @kupujacy varchar(40)
         declare @cena_pierwszego int
+        declare @data datetime
         set @kupujacy = (select nazwa_wyswietlana from Klienci where (steamid = @steamidKupujacego))
         set @cena_pierwszego = (select cena from Produkty where (id = @idProduktu))
-        insert into Transakcje(id, data, kwota_laczna, zleceniodawca)
-        values (@idek, CURRENT_TIMESTAMP, @cena_pierwszego, @kupujacy)
+        set @data = CURRENT_TIMESTAMP
+        insert into Transakcje(data, kwota_laczna, zleceniodawca)
+        values (@data, @cena_pierwszego, @kupujacy)
+
+        declare @idek int
+        set @idek = (select id from Transakcje where (kwota_laczna = @cena_pierwszego AND @kupujacy = zleceniodawca AND @data = data))
         
-        declare @idek1 int
-        set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
-        while exists (select * from PozycjeTransakcji where (id = @idek))
-        begin
-            set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
-        end
-        insert into PozycjeTransakcji(id, produkt, transakcja)
-        values (@idek1, @idProduktu, @idek)
+        insert into PozycjeTransakcji(produkt, transakcja)
+        values (@idProduktu, @idek)
     end
 end try
 begin catch
@@ -588,14 +559,8 @@ begin try
         raiserror ('Nie podano do jakiej transakcji mamy dodac ten produkt!', 11, 2)
     else
     begin
-        declare @idek int
-        set @idek = 10000000 * RAND(@idTransakcji + @idProduktu)
-        while exists (select * from PozycjeTransakcji where (id = @idek))
-        begin
-            set @idek = 10000000 * RAND(@idTransakcji + @idProduktu)
-        end
-        insert into PozycjeTransakcji(id, produkt, transakcja)
-        values (@idek, @idProduktu, @idTransakcji)
+        insert into PozycjeTransakcji(produkt, transakcja)
+        values (@idProduktu, @idTransakcji)
         
         declare @cena money
         set @cena = (select cena from Produkty where id = @idProduktu)
@@ -616,35 +581,36 @@ exec dodaj_Klienta 'Klient_3', '123456789012345678901234567890123456789012345678
 exec dodaj_Klienta 'Klient_4', '1234567890123456789012345678901234567890123456789012345678901234', '19831212'
 exec dodaj_Klienta 'Klient_5', '1234567890123456789012345678901234567890123456789012345678901234', '19500605'
 
-exec dodaj_SteamWallet 750839, null
-exec dodaj_SteamWallet 751100, 2000
+exec dodaj_SteamWallet 1, null
+exec dodaj_SteamWallet 2, 2000
 
-exec dodaj_Znajomosc 751100, 750839
-exec dodaj_Znajomosc 750410, 750969
-exec dodaj_Znajomosc 750410, 750839
+exec dodaj_Znajomosc 1, 2
+exec dodaj_Znajomosc 3, 4
+exec dodaj_Znajomosc 2, 3
 
-exec dodaj_Grupe 750839, 'Nie dla ACTA', 'Nie dajmy się zwieść ACTA! ACTA to ZUO! Nie daje nam PACZEĆ!'
-exec dodaj_Czlonka_Grupy 751100, 'Nie dla ACTA'
-exec dodaj_Czlonka_Grupy 750410, 'Nie dla ACTA'
+exec dodaj_Grupe 3, 'Nie dla ACTA', 'Nie dajmy się zwieść ACTA! ACTA to ZUO! Nie daje nam PACZEĆ!'
+exec dodaj_Czlonka_Grupy 5, 'Nie dla ACTA'
+exec dodaj_Czlonka_Grupy 1, 'Nie dla ACTA'
 
 exec dodaj_OST 'Diablo II - OST', 0, 716800, 'Wspaniała muzyka ze wspaniałej gry.', 'Wilderness', 'Matt Uelmen', 478, 7170
 exec dodaj_OST 'Magica - OST', 500, 358400, 'OST z gry Magica.', 'Vlad is not a Vampire!', 'Vlad', 134, 2010
 
-exec dodaj_Utwor 'Rogue', 'Matt Uelman', 178, 2670, 69687
-exec dodaj_Utwor 'Sisters', 'Matt Uelman', 105, 1575, 69687
+exec dodaj_Utwor 'Rogue', 'Matt Uelman', 178, 2670, 1
+exec dodaj_Utwor 'Sisters', 'Matt Uelman', 105, 1575, 1
 
-exec dodaj_Gre 'Diablo II', 4000, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 69687 
+exec dodaj_Gre 'Diablo II', 4000, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 1
 exec dodaj_Gre 'Deus Ex', 2000, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
-exec dodaj_Gre 'Magica', 4000, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 391630
+exec dodaj_Gre 'Magica', 4000, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 2
 
-exec dodaj_DLC 'Diablo II - Lord Of Destruction', 2000, 768000, 'Dodatek do Diablo II! Dodaje dwie nowe postaci!', 558790, 69687
-exec dodaj_DLC 'Magica - Vietnam', 500, 153600, 'Dodatek do gry Magica. Przenosi naszych magów do.. Wietnamu? O.o', 977703 , 391630
+exec dodaj_DLC 'Diablo II - Lord Of Destruction', 2000, 768000, 'Dodatek do Diablo II! Dodaje dwie nowe postaci!', 558790, 1
+exec dodaj_DLC 'Magica - Vietnam', 500, 153600, 'Dodatek do gry Magica. Przenosi naszych magów do.. Wietnamu? O.o', 977703 , 2
 
 exec dodaj_SDK 'Source SDK', 0, 2359296, 'SDK pozwalające na tworzenie gier na silniczku Source', '1.0.0.0'
 
-exec dodaj_Transakcje 750839, 558790
-exec dodaj_PozycjeTransakcji 23695, 115853
-exec dodaj_Transakcje 750410, 345638
+exec dodaj_Transakcje 1, 3
+exec dodaj_PozycjeTransakcji 1, 1
+exec dodaj_PozycjeTransakcji 6, 1
+exec dodaj_Transakcje 4, 4
 
 ------------ SELECT (Pokazanie zawartości naszej bazy)
 ------------ Na razie za pomocą selectów. Później wykorzystamy funkcje!
