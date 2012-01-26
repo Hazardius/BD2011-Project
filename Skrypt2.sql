@@ -546,4 +546,23 @@ where nazwa2 = @nazwagry
 
 **/
 
+---- Agregujace
+
+select COUNT(*)
+from Klienci
+
+select COUNT(*)
+from Grupy
+
+select id, nazwa
+from Produkty
+where cena = (select MAX(cena)
+				from Produkty)
+			
+select id, nazwa
+from Produkty
+where cena = (select MIN(cena)
+				from Produkty)
+				
+
 -- Przyk�ady ich u�ycia
