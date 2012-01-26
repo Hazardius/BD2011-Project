@@ -1,5 +1,5 @@
-drop DATABASE Steam
-GO
+--drop DATABASE Steam
+--GO
 
 CREATE DATABASE Steam
 GO
@@ -534,11 +534,16 @@ exec dodaj_Klienta 'Klient_4', '123456789012345678901234567890123456789012345678
 exec dodaj_Klienta 'Klient_5', '1234567890123456789012345678901234567890123456789012345678901234', '19500605'
 
 exec dodaj_OST 'Diablo II - OST', 0, 716800, 'Wspaniała muzyka ze wspaniałej gry.', 'Wilderness', 'Matt Uelmen', 478, 7170
+exec dodaj_OST 'Magica - OST', 5, 358400, 'OST z gry Magica.', 'Vlad is not a Vampire!', 'Vlad', 134, 2010
 
-exec dodaj_Gre 'Diablo II', 60, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', FIRST(select id from Produkty where (nazwa = 'Diablo II - OST'))
+exec dodaj_Gre 'Diablo II', 40, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 69687 
 exec dodaj_Gre 'Deus Ex', 20, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
-exec dodaj_Gre 'Magica', 40, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', null
+exec dodaj_Gre 'Magica', 40, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 391630
 
+exec dodaj_DLC 'Diablo II - Lord Of Destruction', 20, 768000, 'Dodatek do Diablo II! Dodaje dwie nowe postaci!', 558790, 69687
+exec dodaj_DLC 'Magica - Vietnam', 5, 153600, 'Dodatek do gry Magica. Przenosi naszych magów do.. Wietnamu? O.o', 977703 , 391630
+
+exec dodaj_SDK 'Source SDK', 0, 2359296, 'SDK pozwalające na tworzenie gier na silniczku Source', '1.0.0.0'
 
 ------------ SELECT (Pokazanie zawartości naszej bazy)
 ------------ Na razie za pomocą selectów. Później wykorzystamy funkcje!
