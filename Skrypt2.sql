@@ -1,5 +1,4 @@
-
----------- NIEKTORE PROCEDURY DODAJ¥CE I EDYTUJ¥CE
+---------- NIEKTORE PROCEDURY DODAJï¿½CE I EDYTUJï¿½CE
 
 create procedure dodaj_SDK
        @nazwa varchar(40),
@@ -17,7 +16,7 @@ begin try
         raiserror ('Nie podano wielkosci pliku!', 11, 2)
     if exists (select * from Produkty where (nazwa = @nazwa))
     begin
-       raiserror ('Istnieje ju¿ produkt o tej nazwie!', 11, 3)
+       raiserror ('Istnieje juï¿½ produkt o tej nazwie!', 11, 3)
     end
     else
     begin
@@ -59,11 +58,11 @@ begin try
         raiserror ('Nie podano wielkosci utworu!', 11, 4)
     if exists (select * from Produkty where (nazwa = @nazwa))
     begin
-       raiserror ('Istnieje ju¿ produkt o tej nazwie!', 11, 5)
+       raiserror ('Istnieje juï¿½ produkt o tej nazwie!', 11, 5)
     end
     if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
     begin
-       raiserror ('Istnieje ju¿ utwor o tej nazwie!', 11, 6)
+       raiserror ('Istnieje juï¿½ utwor o tej nazwie!', 11, 6)
     end
     else
     begin
@@ -101,7 +100,7 @@ begin try
         raiserror ('Nie podano wielkosci pliku!', 11, 2)
     if exists (select * from Produkty where (nazwa = @nazwa))
     begin
-       raiserror ('Istnieje ju¿ produkt o tej nazwie!', 11, 3)
+       raiserror ('Istnieje juï¿½ produkt o tej nazwie!', 11, 3)
     end
     else
     begin
@@ -147,7 +146,7 @@ begin try
         raiserror ('Nie podano gry!', 11, 3)
     if exists (select * from Produkty where (nazwa = @nazwa))
     begin
-       raiserror ('Istnieje ju¿ produkt o tej nazwie!', 11, 4)
+       raiserror ('Istnieje juï¿½ produkt o tej nazwie!', 11, 4)
     end
     if not exists (select * from Produkty where (id = @gra))
     begin
@@ -179,7 +178,7 @@ create procedure dodaj_Utwor
 AS
 begin try
     if (@tytulPierwszegoUtworu is null)
-        raiserror ('Nie podano tytu³u pierwszego utworu!', 11, 1)
+        raiserror ('Nie podano tytuï¿½u pierwszego utworu!', 11, 1)
     if (@autor is null)
         raiserror ('Nie podano autora!', 11, 2)
     if (@wielkoscSciezki is null)
@@ -188,11 +187,11 @@ begin try
         raiserror ('Nie podano albumu!', 11, 4)
     if not exists (select * from OST where (id = @album))
     begin
-       raiserror ('Istnieje ju¿ produkt o tej nazwie!', 11, 5)
+       raiserror ('Istnieje juï¿½ produkt o tej nazwie!', 11, 5)
     end
     if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
     begin
-       raiserror ('Istnieje ju¿ utwor o tej nazwie!', 11, 6)
+       raiserror ('Istnieje juï¿½ utwor o tej nazwie!', 11, 6)
     end
     else
     begin
@@ -221,7 +220,7 @@ begin try
         raiserror ('Uzytkownik ma ponizej 18 lat!', 11, 4)
     if exists (select * from Klienci where (nazwa_wyswietlana = @nazwa_wyswietlana))
     begin
-       raiserror ('Istnieje ju¿ uzytkownik o tej nazwie!', 11, 5)
+       raiserror ('Istnieje juï¿½ uzytkownik o tej nazwie!', 11, 5)
     end
     else
     begin
@@ -274,7 +273,7 @@ begin try
     end
     if exists (select * from Osiagniecia where (nazwa = @nazwa AND @id_prod = idProd))
     begin
-       raiserror ('Istnieje ju¿ osiagniecie o tej nazwie dla wybranej gry!', 11, 4)
+       raiserror ('Istnieje juï¿½ osiagniecie o tej nazwie dla wybranej gry!', 11, 4)
     end
     else
     begin
@@ -471,5 +470,99 @@ begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
 GO
+-- View i tabela tymczasowa
+--- Tabela tymczasowa rzeczyniekupione
 
--- Przyk³ady ich u¿ycia
+create table #rzeczyniekupione
+(id int not null primary key,
+nazwa varchar(40) not null unique,
+cena money not null,
+wielkosc int not null,
+opis varchar(400),
+check (wielkosc > 0));
+
+insert into #rzeczyniekupione
+select c.id, c.nazwa, c.cena, c.wielkosc, c.opis
+       from Posiadania d join Produkty c
+	on d.produkt = c.id
+	where wlasciciel is null;
+	
+---------- view
+
+create view Wishlist_info(id, produkt)
+as
+select  id, produkt
+		from ObiektyNaWishlist
+		where autorWishlisty = (select steamid
+					from Klienci
+					where steamid = ???/**tutaj nr klineta**/)
+					
+					
+select * from Wishlist_info
+
+/**
+create function produkt
+    	(@nick steamid)
+        returns table
+as
+begin
+        return select id , nazwa ,wlasciciel , steamid
+		from Posiadania d join Produkty c
+		on d.produkt = c.id
+		where wlasciciel = (select steamid
+					from Klienci
+					where steamid = @nick)
+end
+
+create function wishlista
+		(@nick steamid)
+        returns table
+as
+begin
+        return select id , produkt
+		from ObiektyNaWishlist
+		where autorWishlisty = (select steamid
+					from Klienci
+					where steamid = @nick)
+end
+
+
+create function achivmon
+		(@nick steamid,
+		 @nazwagry id )
+        returns table
+as
+begin
+return select c.id as id_osiagniecia, c.nazwa as nazwa_osigniecia , c.nazwa2 as nazwa_gry
+		from (select a.nazwa, a.id, b.nazwa as nazwa2
+		from Osiagniecia a join (select *
+				from Posiadania d join Produkty c
+				on d.produkt = c.id
+				where wlasciciel = (select steamid   /** zamiast tego mozna wywolaÄ‡ procedure od nicku ? **/
+					from Klienci
+					where steamid = @nick)) b
+on a.idProd = b.id ) c
+where nazwa2 = @nazwagry 
+
+**/
+
+---- Agregujace
+
+select COUNT(*)
+from Klienci
+
+select COUNT(*)
+from Grupy
+
+select id, nazwa
+from Produkty
+where cena = (select MAX(cena)
+				from Produkty)
+			
+select id, nazwa
+from Produkty
+where cena = (select MIN(cena)
+				from Produkty)
+				
+
+-- Przykï¿½ady ich uï¿½ycia
