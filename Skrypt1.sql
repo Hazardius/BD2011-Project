@@ -171,21 +171,24 @@ create trigger usun_elementy_wishlist
 on ObiektyNaWishlist
 for delete
 as
-    if (select COUNT(*) from deleted) = 1
+    if (Select COUNT(*) from deleted) != 0
     begin
-        declare @usunietyPrior int
-        set @usunietyPrior = (Select priorytet from deleted)
-        declare @wlasciciel int
-        set @wlasciciel = (Select autorWishlisty from deleted)
+        if (select COUNT(*) from deleted) = 1
+        begin
+            declare @usunietyPrior int
+            set @usunietyPrior = (Select priorytet from deleted)
+            declare @wlasciciel int
+            set @wlasciciel = (Select autorWishlisty from deleted)
         
-        update ObiektyNaWishlist
-        set priorytet = priorytet - 1
-        where (priorytet > @usunietyPrior) AND (autorWishlisty = @wlasciciel)
-    end
-    else
-    begin
-        rollback
-        return
+            update ObiektyNaWishlist
+            set priorytet = priorytet - 1
+            where (priorytet > @usunietyPrior) AND (autorWishlisty = @wlasciciel)
+        end
+        else
+        begin
+            rollback
+            return
+        end
     end
 go
 
@@ -281,38 +284,62 @@ values ('20120120', 6000, 1), ('20101220', 2000, 4)
 insert into PozycjeTransakcji (produkt, transakcja)
 values (1,1), (3,1), (6,1), (4,2)
 
+go
+
 insert into Posiadania (produkt, wlasciciel)
 values (1,1)
+
+go
 
 insert into Posiadania (produkt, wlasciciel)
 values (3,1)
 
+go
+
 insert into Posiadania (produkt, wlasciciel)
 values (6,1)
+
+go
 
 insert into Posiadania (produkt, wlasciciel)
 values (4,4)
 
+go
+
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values (1, 0, 4)
+
+go
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 0, 5)
 
+go
+
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 1, 7)
+
+go
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 2, 2)
 
+go
+
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(3, 0, 1)
+
+go
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(3, 0, 6)
 
+go
+
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(3, 0, 3)
+
+go
 
 insert into Osiagniecia (idProd, nazwa, opis)
 values
