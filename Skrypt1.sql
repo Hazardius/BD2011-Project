@@ -10,8 +10,9 @@ GO
 SET LANGUAGE polski
 GO
 
---------- CREATE (Utworzenie podstawy bazy danych, czyli tabel
---------- i kilku zależności między nimi)
+--------- CREATE (Instrukcje, ktore tworza tabele. Zawiera warunki spojnosci
+--------- (klucze glowne, klucze obce, zalezności referencyjne, check, identity,
+--------- unique, kolumny obliczane), typy danych, wartosci domyslne.)
 
 create table Klienci
 (steamid int IDENTITY(1,1) primary key,
@@ -19,14 +20,20 @@ nazwa_wyswietlana varchar(40) not null,
 haslo varchar(64) not null check (Len(haslo) = 64),
 data_urodzenia date);
 
+go
+
 create table SteamWallet
 (wlasciciel int references Klienci(steamid) primary key,
 kwota money default 0);
+
+go
 
 create table Znajomosci
 (znajomy1 int references Klienci(steamid) not null,
 znajomy2 int references Klienci(steamid) not null,
 check (znajomy1 != znajomy2));
+
+go
 
 create table Transakcje
 (id int IDENTITY(1,1) primary key,
@@ -34,13 +41,19 @@ data datetime,
 kwota_laczna money default 0,
 zleceniodawca varchar(40));
 
+go
+
 create table Grupy
 (nazwa varchar(50) not null primary key,
 opis varchar(400));
 
+go
+
 create table Czlonkostwa
 (klient int references Klienci(steamid),
 grupa varchar(50) references Grupy(nazwa));
+
+go
 
 create table Produkty
 (id int IDENTITY(1,1) primary key,
@@ -49,8 +62,12 @@ cena money not null,
 wielkosc int not null check (wielkosc > 0),
 opis varchar(400));
 
+go
+
 create table OST
 (id int references Produkty(id) primary key);
+
+go
 
 create table Utwory
 (tytul varchar(40) not null primary key,
@@ -61,31 +78,45 @@ album int references OST(id) not null,
 check (wielkosc > 0),
 check (dlugosc > 0));
 
+go
+
 create table Gry
 (id int references Produkty(id) primary key,
 ost int references OST(id));
+
+go
 
 create table DLC
 (id int references Produkty(id) primary key,
 gra int references Gry(id) not null,
 ost int references OST(id));
 
+go
+
 create table SDK
 (id int references Produkty(id) primary key,
 wersja varchar(10));
+
+go
 
 create table Osiagniecia
 (nazwa varchar(100) not null primary key,
 opis varchar(400),
 idProd int references Produkty(id) not null);
 
+go
+
 create table OsiagnieciaOdblokowane
-(osiagniecie int references Osiagniecia(id) not null,
+(osiagniecie varchar(100) references Osiagniecia(nazwa) not null,
 kolekcjoner int references Klienci(steamid) not null);
+
+go
 
 create table Posiadania
 (produkt int references Produkty(id) not null,
 wlasciciel int references Klienci(steamid) not null);
+
+go
 
 create table ObiektyNaWishlist
 (id int IDENTITY(1,1) primary key,
@@ -94,6 +125,8 @@ autorWishlisty int references Klienci(steamid),
 priorytet int not null,
 check (priorytet > -1));
 
+go
+
 create table PozycjeTransakcji
 (id int IDENTITY(1,1) primary key,
 produkt int references Produkty(id),
@@ -101,9 +134,67 @@ transakcja int references Transakcje(id));
 
 GO
 
----------- INSERT (Dodanie kilku przykładowych wartości na początek)
+---------- TRIGGERY (Reguly bazy danych)
 
-insert into Klienci (nazwa_wyswietlana, haslo, haslo)
+create trigger przesun_elementy_wishlist
+on ObiektyNaWishlist
+for insert
+as
+    if (select COUNT(*) from inserted) = 1
+    begin
+        declare @nowyPrior int
+        set @nowyPrior = (Select priorytet from inserted)
+        declare @wlasciciel int
+        set @wlasciciel = (Select autorWishlisty from inserted)
+    
+        update ObiektyNaWishlist
+        set priorytet = priorytet + 1
+        where (priorytet <= @nowyPrior) AND (autorWishlisty = @wlasciciel)
+    end
+    else
+        rollback
+go
+
+create trigger usun_elementy_wishlist
+on ObiektyNaWishlist
+for delete
+as
+    if (select COUNT(*) from deleted) = 1
+    begin
+        declare @usunietyPrior int
+        set @usunietyPrior = (Select priorytet from deleted)
+        declare @wlasciciel int
+        set @wlasciciel = (Select autorWishlisty from deleted)
+        
+        update ObiektyNaWishlist
+        set priorytet = priorytet - 1
+        where (priorytet < @usunietyPrior) AND (autorWishlisty = @wlasciciel)
+    end
+    else
+        rollback
+go
+
+create trigger dodano_nowy_posiadany_produkt
+on Posiadania
+for insert
+as
+    
+    delete from ObiektyNaWishlist
+    where exists (Select *
+                  from inserted a
+                  where (a.produkt = produkt)
+                      and (a.wlasciciel = autorWishlisty))
+go
+
+GO
+
+---------- INDEKSY
+
+GO
+
+---------- INSERT (Instrukcje wprowadzania danych)
+
+insert into Klienci (nazwa_wyswietlana, haslo, data_urodzenia)
 values ('Klient_1', '1234567890123456789012345678901234567890123456789012345678901234', '19890223'),
 ('Klient_2', '1234567890123456789012345678901234567890123456789012345678901234', '19700304'),
 ('Klient_3', '1234567890123456789012345678901234567890123456789012345678901234', '19900406'),
@@ -163,10 +254,31 @@ insert into PozycjeTransakcji (produkt, transakcja)
 values (1,1), (3,1), (6,1), (4,2)
 
 insert into Posiadania (produkt, wlasciciel)
-values (1,1), (3,1), (6,1), (4,4)
+values (1,1)
+
+insert into Posiadania (produkt, wlasciciel)
+values (3,1)
+
+insert into Posiadania (produkt, wlasciciel)
+values (6,1)
+
+insert into Posiadania (produkt, wlasciciel)
+values (4,4)
+
+insert into Posiadania (produkt, wlasciciel)
+values (2,5)
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
-values (1, 0, 4), (2, 0, 5), (2, 1, 7), (2, 2, 2)
+values (1, 0, 4)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(2, 0, 5)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(2, 1, 7)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(2, 2, 2)
 
 insert into Osiagniecia (idProd, nazwa, opis)
 values
@@ -182,9 +294,10 @@ values
 (1, 'Wyjscie spod kiecki mamusi'),
 (1, 'Stay a while and listen!'),
 (4, 'Jestes zlym czlowiekiem JC!')
+
 GO
------------- SELECT (Pokazanie zawartości naszej bazy)
------------- Na razie za pomocą selectów. Później wykorzystamy funkcje!
+
+------------ SELECT (Dodatkowy dzial pokazujacy tabele powstalej bazy)
 
 select * from Produkty
 select * from SDK
@@ -207,3 +320,5 @@ select * from ObiektyNaWishlist
 
 select * from Osiagniecia
 select * from OsiagnieciaOdblokowane
+
+GO
