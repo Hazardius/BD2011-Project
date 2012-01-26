@@ -21,8 +21,7 @@ data_urodzenia date,
 check (Len(haslo) = 64));
 
 create table SteamWallet
-(id int not null primary key,
-wlasciciel int references Klienci(steamid) unique not null,
+(wlasciciel int references Klienci(steamid) primary key,
 kwota money default 0);
 
 create table Znajomosci
@@ -92,8 +91,7 @@ create table Posiadania
 wlasciciel int references Klienci(steamid) not null);
 
 create table ObiektyNaWishlist
-(id int not null primary key,
-produkt int references Produkty(id),
+(produkt int references Produkty(id),
 autorWishlisty int references Klienci(steamid),
 priorytet int not null,
 check (priorytet > -1));
@@ -356,6 +354,30 @@ begin catch
 end catch
 GO
 
+create procedure dodaj_SteamWallet
+       @steamid int,
+       @kwota int
+AS
+begin try
+    if (@steamid is null)
+        raiserror ('Nie podano nazwy uzytkownika!', 11, 1)
+    if (@kwota is null)
+        set @kwota = 0
+    if not exists (select * from Klienci where (@steamid = steamid))
+    begin
+       raiserror ('Nie istnieje taki uzytkownik!', 11, 2)
+    end
+    else
+    begin
+        insert into SteamWallet (wlasciciel, kwota)
+        values (@steamid, @kwota)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
 create procedure dodaj_Osiagniecie
        @nazwa varchar(50),
        @opis varchar(100),
@@ -491,7 +513,7 @@ begin try
     begin
        raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 3)
     end
-    if exists (select * from Produkty where (@idProduktu = id))
+    if not exists (select * from Produkty where (@idProduktu = id))
     begin
        raiserror ('Nie istnieje taki produkt!', 11, 4)
     end
@@ -511,13 +533,39 @@ begin try
         values (@idek, CURRENT_TIMESTAMP, @cena_pierwszego, @kupujacy)
         
         declare @idek1 int
-        set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
-        while exists (select * from PozycjeTransakcji where (id = @idek))
+        set @idek1 = 1000000 * RAND(@steamidKupujacego + @idProduktu)
+        while exists (select * from Transakcje where (id = @idek))
         begin
-            set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
+            set @idek1 = 1000000 * RAND(@steamidKupujacego + @idProduktu)
         end
         insert into PozycjeTransakcji(id, produkt, transakcja)
         values (@idek1, @idProduktu, @idek)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
+create procedure dodaj_PozycjeTransakcji
+       @idProduktu int,
+       @idTransakcji int
+AS
+begin try
+    if (@idProduktu is null)
+        raiserror ('Nie mozna dodac niczego do transakcji!', 11, 1)
+    if (@idTransakcji is null)
+        raiserror ('Nie podano do jakiej transakcji mamy dodac ten produkt!', 11, 2)
+    else
+    begin
+        declare @idek int
+        set @idek = 1000000 * RAND(@idTransakcji + @idProduktu)
+        while exists (select * from PozycjeTransakcji where (id = @idek))
+        begin
+            set @idek = 1000000 * RAND(@idTransakcji + @idProduktu)
+        end
+        insert into PozycjeTransakcji(id, produkt, transakcja)
+        values (@idek, @idProduktu, @idTransakcji)
     end
 end try
 begin catch
@@ -533,38 +581,57 @@ exec dodaj_Klienta 'Klient_3', '123456789012345678901234567890123456789012345678
 exec dodaj_Klienta 'Klient_4', '1234567890123456789012345678901234567890123456789012345678901234', '19831212'
 exec dodaj_Klienta 'Klient_5', '1234567890123456789012345678901234567890123456789012345678901234', '19500605'
 
+exec dodaj_SteamWallet 750839, null
+exec dodaj_SteamWallet 751100, 2000
+
+exec dodaj_Znajomosc 751100, 750839
+exec dodaj_Znajomosc 750410, 750969
+exec dodaj_Znajomosc 750410, 750839
+
+exec dodaj_Grupe 750839, 'Nie dla ACTA', 'Nie dajmy się zwieść ACTA! ACTA to ZUO! Nie daje nam PACZEĆ!'
+exec dodaj_Czlonka_Grupy 751100, 'Nie dla ACTA'
+exec dodaj_Czlonka_Grupy 750410, 'Nie dla ACTA'
+
 exec dodaj_OST 'Diablo II - OST', 0, 716800, 'Wspaniała muzyka ze wspaniałej gry.', 'Wilderness', 'Matt Uelmen', 478, 7170
-exec dodaj_OST 'Magica - OST', 5, 358400, 'OST z gry Magica.', 'Vlad is not a Vampire!', 'Vlad', 134, 2010
+exec dodaj_OST 'Magica - OST', 500, 358400, 'OST z gry Magica.', 'Vlad is not a Vampire!', 'Vlad', 134, 2010
 
 exec dodaj_Utwor 'Rogue', 'Matt Uelman', 178, 2670, 69687
 exec dodaj_Utwor 'Sisters', 'Matt Uelman', 105, 1575, 69687
 
-exec dodaj_Gre 'Diablo II', 40, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 69687 
-exec dodaj_Gre 'Deus Ex', 20, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
-exec dodaj_Gre 'Magica', 40, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 391630
+exec dodaj_Gre 'Diablo II', 4000, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 69687 
+exec dodaj_Gre 'Deus Ex', 2000, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
+exec dodaj_Gre 'Magica', 4000, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 391630
 
-exec dodaj_DLC 'Diablo II - Lord Of Destruction', 20, 768000, 'Dodatek do Diablo II! Dodaje dwie nowe postaci!', 558790, 69687
-exec dodaj_DLC 'Magica - Vietnam', 5, 153600, 'Dodatek do gry Magica. Przenosi naszych magów do.. Wietnamu? O.o', 977703 , 391630
+exec dodaj_DLC 'Diablo II - Lord Of Destruction', 2000, 768000, 'Dodatek do Diablo II! Dodaje dwie nowe postaci!', 558790, 69687
+exec dodaj_DLC 'Magica - Vietnam', 500, 153600, 'Dodatek do gry Magica. Przenosi naszych magów do.. Wietnamu? O.o', 977703 , 391630
 
 exec dodaj_SDK 'Source SDK', 0, 2359296, 'SDK pozwalające na tworzenie gier na silniczku Source', '1.0.0.0'
+
+exec dodaj_Transakcje 750839, 558790
+exec dodaj_PozycjeTransakcji 23695, 115853
+exec dodaj_Transakcje 750410, 345638
 
 ------------ SELECT (Pokazanie zawartości naszej bazy)
 ------------ Na razie za pomocą selectów. Później wykorzystamy funkcje!
 
-select * from Czlonkostwa
-select * from DLC
-select * from Grupy
-select * from Gry
 select * from Produkty
+select * from SDK
+select * from Gry
+select * from DLC
+select * from OST
+select * from Utwory
+
 select * from Klienci
+select * from SteamWallet
+select * from Znajomosci
+select * from Grupy
+select * from Czlonkostwa
+
+select * from Transakcje
+select * from PozycjeTransakcji
+
+select * from Posiadania
 select * from ObiektyNaWishlist
+
 select * from Osiagniecia
 select * from OsiagnieciaOdblokowane
-select * from OST
-select * from Posiadania
-select * from PozycjeTransakcji
-select * from SDK
-select * from SteamWallet
-select * from Transakcje
-select * from Utwory
-select * from Znajomosci
