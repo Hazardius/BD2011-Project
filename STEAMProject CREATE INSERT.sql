@@ -34,7 +34,6 @@ create table Transakcje
 (id int not null primary key,
 data datetime,
 kwota_laczna money,
-idZleceniodawcy int references Klienci(steamid),
 zleceniodawca varchar(40));
 
 create table Grupy
@@ -129,10 +128,10 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = RAND(@wielkosc)
+        set @idek = 1000000 * RAND(@wielkosc)
         while exists (select * from Produkty where (id = @idek))
         begin
-            set @idek = RAND(@wielkosc)
+            set @idek = 1000000 * RAND(@wielkosc)
         end
         insert into Produkty(id, nazwa, cena, wielkosc, opis)
         values (@idek, @nazwa, @cena, @wielkosc, @opis)
@@ -168,19 +167,19 @@ begin try
         raiserror ('Nie podano wielkosci utworu!', 11, 4)
     if exists (select * from Produkty where (nazwa = @nazwa))
     begin
-       raiserror ('Istnieje już produkt o tej nazwie!', 11, 4)
+       raiserror ('Istnieje już produkt o tej nazwie!', 11, 5)
     end
     if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
     begin
-       raiserror ('Istnieje już utwor o tej nazwie!', 11, 5)
+       raiserror ('Istnieje już utwor o tej nazwie!', 11, 6)
     end
     else
     begin
         declare @idek int
-        set @idek = RAND(@wielkosc)
+        set @idek = 1000000 * RAND(@wielkosc)
         while exists (select * from Produkty where (id = @idek))
         begin
-            set @idek = RAND(@wielkosc)
+            set @idek = 1000000 * RAND(@wielkosc)
         end
         insert into Produkty(id, nazwa, cena, wielkosc, opis)
         values (@idek, @nazwa, @cena, @wielkosc, @opis)
@@ -216,15 +215,24 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = RAND(@wielkosc)
+        set @idek = 1000000 * RAND(@wielkosc)
         while exists (select * from Produkty where (id = @idek))
         begin
-            set @idek = RAND(@wielkosc)
+            set @idek = 1000000 * RAND(@wielkosc)
         end
         insert into Produkty(id, nazwa, cena, wielkosc, opis)
         values (@idek, @nazwa, @cena, @wielkosc, @opis)
-        insert into Gry(id, ost)
-        values (@idek, @ost)
+        
+        if (@ost is not null)
+        begin
+            insert into Gry(id, ost)
+            values (@idek, @ost)
+        end
+        else
+        begin
+            insert into Gry(id)
+            values (@idek)
+        end
     end
 end try
 begin catch
@@ -260,10 +268,10 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = RAND(@wielkosc)
+        set @idek = 1000000 * RAND(@wielkosc)
         while exists (select * from Produkty where (id = @idek))
         begin
-            set @idek = RAND(@wielkosc)
+            set @idek = 1000000 * RAND(@wielkosc)
         end
         insert into Produkty(id, nazwa, cena, wielkosc, opis)
         values (@idek, @nazwa, @cena, @wielkosc, @opis)
@@ -369,10 +377,10 @@ begin try
     else
     begin
         declare @idek int
-        set @idek = RAND(@id_prod)
+        set @idek = 1000000 * RAND(@id_prod)
         while exists (select * from Osiagniecia where (id = @idek))
         begin
-            set @idek = RAND(@id_prod)
+            set @idek = 1000000 * RAND(@id_prod)
         end
         insert into Osiagniecia(id, nazwa, opis, idProd)
         values (@idek,@nazwa,@opis,@id_prod)
@@ -469,6 +477,54 @@ begin catch
 end catch
 GO
 
+create procedure dodaj_Transakcje
+       @steamidKupujacego int,
+       @idProduktu int
+AS
+begin try
+    if (@steamidKupujacego is null)
+        raiserror ('Nie podano wlasciciela koszyka!', 11, 1)
+    if (@idProduktu is null)
+        raiserror ('Nie podano pierwszego produktu z koszyka!', 11, 2)
+    if not exists (select * from Klienci
+        where (@steamidKupujacego = steamid))
+    begin
+       raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 3)
+    end
+    if exists (select * from Produkty where (@idProduktu = id))
+    begin
+       raiserror ('Nie istnieje taki produkt!', 11, 4)
+    end
+    else
+    begin
+        declare @idek int
+        set @idek = 1000000 * RAND(@steamidKupujacego + @idProduktu)
+        while exists (select * from Transakcje where (id = @idek))
+        begin
+            set @idek = 1000000 * RAND(@steamidKupujacego + @idProduktu)
+        end
+        declare @kupujacy varchar(40)
+        declare @cena_pierwszego int
+        set @kupujacy = (select nazwa_wyswietlana from Klienci where (steamid = @steamidKupujacego))
+        set @cena_pierwszego = (select cena from Produkty where (id = @idProduktu))
+        insert into Transakcje(id, data, kwota_laczna, zleceniodawca)
+        values (@idek, CURRENT_TIMESTAMP, @cena_pierwszego, @kupujacy)
+        
+        declare @idek1 int
+        set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
+        while exists (select * from PozycjeTransakcji where (id = @idek))
+        begin
+            set @idek1 = 10000000 * RAND(@steamidKupujacego + @idProduktu)
+        end
+        insert into PozycjeTransakcji(id, produkt, transakcja)
+        values (@idek1, @idProduktu, @idek)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+GO
+
 ---------- INSERT (Dodanie kilku przykładowych wartości na początek)
 
 exec dodaj_Klienta 'Klient_1', '1234567890123456789012345678901234567890123456789012345678901234', '19890223'
@@ -477,8 +533,12 @@ exec dodaj_Klienta 'Klient_3', '123456789012345678901234567890123456789012345678
 exec dodaj_Klienta 'Klient_4', '1234567890123456789012345678901234567890123456789012345678901234', '19831212'
 exec dodaj_Klienta 'Klient_5', '1234567890123456789012345678901234567890123456789012345678901234', '19500605'
 
-insert into Pracownicy
-values(1, 'Wachowiak', null, 4500, 900, 'profesor', '01-09-1980');
+exec dodaj_OST 'Diablo II - OST', 0, 716800, 'Wspaniała muzyka ze wspaniałej gry.', 'Wilderness', 'Matt Uelmen', 478, 7170
+
+exec dodaj_Gre 'Diablo II', 60, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', FIRST(select id from Produkty where (nazwa = 'Diablo II - OST'))
+exec dodaj_Gre 'Deus Ex', 20, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
+exec dodaj_Gre 'Magica', 40, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', null
+
 
 ------------ SELECT (Pokazanie zawartości naszej bazy)
 ------------ Na razie za pomocą selectów. Później wykorzystamy funkcje!
@@ -487,6 +547,7 @@ select * from Czlonkostwa
 select * from DLC
 select * from Grupy
 select * from Gry
+select * from Produkty
 select * from Klienci
 select * from ObiektyNaWishlist
 select * from Osiagniecia
@@ -494,7 +555,6 @@ select * from OsiagnieciaOdblokowane
 select * from OST
 select * from Posiadania
 select * from PozycjeTransakcji
-select * from Produkty
 select * from SDK
 select * from SteamWallet
 select * from Transakcje
