@@ -577,3 +577,10 @@ where priorytet = 1
 
 insert into Posiadania (produkt, wlasciciel)
 values (3,2)
+
+-- Przyklad uzycia INDEKSOW
+
+select Produkty.*
+from Produkty with (index(ProduktyPoID),nolock)
+where
+Produkty.nazwa like '%Diablo%'

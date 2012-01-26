@@ -214,6 +214,10 @@ GO
 
 ---------- INDEKSY
 
+CREATE INDEX ProduktyPoID
+    ON Produkty ( id ASC )
+    INCLUDE (nazwa)
+
 GO
 
 ---------- INSERT (Instrukcje wprowadzania danych)
@@ -300,6 +304,15 @@ values(2, 1, 7)
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 2, 2)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(3, 0, 1)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(3, 0, 6)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(3, 0, 3)
 
 insert into Osiagniecia (idProd, nazwa, opis)
 values
