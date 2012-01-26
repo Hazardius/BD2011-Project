@@ -500,4 +500,50 @@ select  id, produkt
 					
 select * from Wishlist_info
 
+/**
+create function produkt
+    	(@nick steamid)
+        returns table
+as
+begin
+        return select id , nazwa ,wlasciciel , steamid
+		from Posiadania d join Produkty c
+		on d.produkt = c.id
+		where wlasciciel = (select steamid
+					from Klienci
+					where steamid = @nick)
+end
+
+create function wishlista
+		(@nick steamid)
+        returns table
+as
+begin
+        return select id , produkt
+		from ObiektyNaWishlist
+		where autorWishlisty = (select steamid
+					from Klienci
+					where steamid = @nick)
+end
+
+
+create function achivmon
+		(@nick steamid,
+		 @nazwagry id )
+        returns table
+as
+begin
+return select c.id as id_osiagniecia, c.nazwa as nazwa_osigniecia , c.nazwa2 as nazwa_gry
+		from (select a.nazwa, a.id, b.nazwa as nazwa2
+		from Osiagniecia a join (select *
+				from Posiadania d join Produkty c
+				on d.produkt = c.id
+				where wlasciciel = (select steamid   /** zamiast tego mozna wywolać procedure od nicku ? **/
+					from Klienci
+					where steamid = @nick)) b
+on a.idProd = b.id ) c
+where nazwa2 = @nazwagry 
+
+**/
+
 -- Przyk�ady ich u�ycia
