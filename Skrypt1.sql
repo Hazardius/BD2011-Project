@@ -146,13 +146,26 @@ as
         set @nowyPrior = (Select priorytet from inserted)
         declare @wlasciciel int
         set @wlasciciel = (Select autorWishlisty from inserted)
+        declare @prod int
+        set @prod = (Select produkt from inserted)
+        
+        if (Select COUNT(*) from ObiektyNaWishlist where @wlasciciel = autorWishlisty
+            AND @prod = produkt) > 1
+        begin
+            rollback
+            return
+        end
     
         update ObiektyNaWishlist
         set priorytet = priorytet + 1
-        where (priorytet <= @nowyPrior) AND (autorWishlisty = @wlasciciel)
+        where (priorytet >= @nowyPrior) AND (autorWishlisty = @wlasciciel)
+            AND (produkt != @prod)
     end
     else
+    begin
         rollback
+        return
+    end
 go
 
 create trigger usun_elementy_wishlist
@@ -168,10 +181,13 @@ as
         
         update ObiektyNaWishlist
         set priorytet = priorytet - 1
-        where (priorytet < @usunietyPrior) AND (autorWishlisty = @wlasciciel)
+        where (priorytet > @usunietyPrior) AND (autorWishlisty = @wlasciciel)
     end
     else
+    begin
         rollback
+        return
+    end
 go
 
 create trigger dodano_nowy_posiadany_produkt
@@ -279,6 +295,12 @@ values(2, 1, 7)
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 2, 2)
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(2, 0, 3)
+
+delete from ObiektyNaWishlist
+where priorytet = 1
 
 insert into Osiagniecia (idProd, nazwa, opis)
 values
