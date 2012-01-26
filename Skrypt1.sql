@@ -122,8 +122,7 @@ create table ObiektyNaWishlist
 (id int IDENTITY(1,1) primary key,
 produkt int references Produkty(id),
 autorWishlisty int references Klienci(steamid),
-priorytet int not null,
-check (priorytet > -1));
+priorytet int not null check (priorytet > -1));
 
 go
 
@@ -194,12 +193,21 @@ create trigger dodano_nowy_posiadany_produkt
 on Posiadania
 for insert
 as
-    
-    delete from ObiektyNaWishlist
-    where exists (Select *
-                  from inserted a
-                  where (a.produkt = produkt)
-                      and (a.wlasciciel = autorWishlisty))
+    if (select COUNT(*) from inserted) = 1
+    begin
+        declare @wlasciciel int
+        set @wlasciciel = (Select wlasciciel from inserted)
+        declare @prodid int
+        set @prodid = (Select produkt from inserted)
+        
+        delete ObiektyNaWishlist
+        where (@prodid = produkt) AND (autorWishlisty = @wlasciciel)
+    end
+    else
+    begin
+        rollback
+        return
+    end
 go
 
 GO
@@ -281,9 +289,6 @@ values (6,1)
 insert into Posiadania (produkt, wlasciciel)
 values (4,4)
 
-insert into Posiadania (produkt, wlasciciel)
-values (2,5)
-
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values (1, 0, 4)
 
@@ -295,12 +300,6 @@ values(2, 1, 7)
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 2, 2)
-
-insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
-values(2, 0, 3)
-
-delete from ObiektyNaWishlist
-where priorytet = 1
 
 insert into Osiagniecia (idProd, nazwa, opis)
 values

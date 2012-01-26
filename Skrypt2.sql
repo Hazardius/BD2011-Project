@@ -563,6 +563,17 @@ select id, nazwa
 from Produkty
 where cena = (select MIN(cena)
 				from Produkty)
-				
 
--- Przyk�ady ich u�ycia
+-- Przyklad uzycia triggerow
+
+insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
+values(2, 0, 3)
+
+delete from ObiektyNaWishlist
+where priorytet = 0
+
+delete from ObiektyNaWishlist
+where priorytet = 1
+
+insert into Posiadania (produkt, wlasciciel)
+values (3,2)
