@@ -536,6 +536,9 @@ exec dodaj_Klienta 'Klient_5', '123456789012345678901234567890123456789012345678
 exec dodaj_OST 'Diablo II - OST', 0, 716800, 'Wspaniała muzyka ze wspaniałej gry.', 'Wilderness', 'Matt Uelmen', 478, 7170
 exec dodaj_OST 'Magica - OST', 5, 358400, 'OST z gry Magica.', 'Vlad is not a Vampire!', 'Vlad', 134, 2010
 
+exec dodaj_Utwor 'Rogue', 'Matt Uelman', 178, 2670, 69687
+exec dodaj_Utwor 'Sisters', 'Matt Uelman', 105, 1575, 69687
+
 exec dodaj_Gre 'Diablo II', 40, 2621440, 'Klasyk gier komputerowych. Znany powszechnie HacknSlash!', 69687 
 exec dodaj_Gre 'Deus Ex', 20, 409600, 'Klasyk gier komputerowych. Świetna gra RPG!', null
 exec dodaj_Gre 'Magica', 40, 819200, 'Parodnia gier RPG zapewniająca spore możliwości tworzenia czarów.', 391630
