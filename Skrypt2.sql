@@ -472,3 +472,4 @@ begin catch
 end catch
 GO
 
+-- Przyk³ady ich u¿ycia
