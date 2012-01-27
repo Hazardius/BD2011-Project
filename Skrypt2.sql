@@ -1,3 +1,142 @@
+
+USE Steam
+GO
+
+--- Tabela tymczasowa "Rzeczy nie kupionych"
+
+create table #rzeczyniekupione
+(id int not null primary key,
+nazwa varchar(40) not null unique,
+cena money not null,
+wielkosc int not null,
+opis varchar(400),
+check (wielkosc > 0));
+
+go
+
+insert into #rzeczyniekupione
+select c.id, c.nazwa, c.cena, c.wielkosc, c.opis
+       from Posiadania d right outer join Produkty c
+	on d.produkt = c.id
+	where wlasciciel is null;
+
+go
+
+select * from #rzeczyniekupione
+
+go
+
+---------- Widoki/Perspektywy
+
+create view Wishlist_info(id, produkt)
+as
+select  id, produkt
+		from ObiektyNaWishlist
+		where autorWishlisty = (select steamid
+					from Klienci
+					where (steamid = 1))
+
+go
+
+select * from Wishlist_info
+
+go
+
+---------- PROCEDURY
+
+go
+
+---------- FUNKCJE
+
+----- Skalarna
+
+create function ilosc_czlonkow_grupy
+        (@nazwa_grupy varchar(50))
+        returns int
+as
+begin
+        return (Select COUNT(*) from Czlonkostwa where (grupa = @nazwa_grupy))
+end
+
+go
+
+PRINT dbo.ilosc_czlonkow_grupy('Nie dla ACTA')
+
+go
+
+----- Tablicowe proste
+
+create function posiadane_produkty
+    	(@nick varchar(40))
+        returns table
+as
+        return select id , nazwa 
+		from Posiadania d join Produkty c
+		on d.produkt = c.id
+		where wlasciciel = (select steamid
+					from Klienci
+					where nazwa_wyswietlana = @nick)
+
+go
+
+Select * from posiadane_produkty('Klient_1')
+
+go
+
+create function wishlista
+		(@nick varchar(40))
+        returns table
+as
+        return select nazwa, priorytet
+		from ObiektyNaWishlist o join Produkty p
+		on o.produkt = p.id
+		where autorWishlisty = (select steamid
+					from Klienci
+					where nazwa_wyswietlana = @nick)
+
+go
+
+Select * from wishlista('Klient_1')
+Select * from wishlista('Klient_2')
+
+go
+
+----- Tablicowa złożona
+
+create function achievement
+		(@nick varchar(40),
+		 @nazwagry varchar(40))
+        returns @achievementy table
+                (achievement varchar(100), gra varchar(40))
+as
+begin
+        if ((Select id from Produkty where @nazwagry = nazwa) in (Select id from Gry))
+            OR ((Select id from Produkty where @nazwagry = nazwa) in (Select id from DLC))
+        begin
+            insert into @achievementy
+            select o.nazwa as nazwa_osiagniecia, p.nazwa as nazwa_gry
+                from Osiagniecia o, Produkty p, OsiagnieciaOdblokowane oo
+                where (o.idProd = p.id)
+                    AND (@nazwagry = p.nazwa)
+                    AND (oo.kolekcjoner = @nick)
+                    AND (oo.osiagniecie = o.nazwa)
+        end
+        else
+        begin
+            insert into @achievementy
+            values ('n/d','n/d')
+        end
+    return
+end
+
+go
+
+select * from achievement(1, 'Diablo II')
+select * from achievement(4, 'Diablo II')
+select * from achievement(1, 'Source SDK')
+
+go
+
 ---------- NIEKTORE PROCEDURY DODAJ�CE I EDYTUJ�CE
 
 create procedure dodaj_SDK
@@ -470,81 +609,8 @@ begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
 GO
--- View i tabela tymczasowa
---- Tabela tymczasowa rzeczyniekupione
-
-create table #rzeczyniekupione
-(id int not null primary key,
-nazwa varchar(40) not null unique,
-cena money not null,
-wielkosc int not null,
-opis varchar(400),
-check (wielkosc > 0));
-
-insert into #rzeczyniekupione
-select c.id, c.nazwa, c.cena, c.wielkosc, c.opis
-       from Posiadania d join Produkty c
-	on d.produkt = c.id
-	where wlasciciel is null;
-	
----------- view
-
-create view Wishlist_info(id, produkt)
-as
-select  id, produkt
-		from ObiektyNaWishlist
-		where autorWishlisty = (select steamid
-					from Klienci
-					where steamid = ???/**tutaj nr klineta**/)
-					
-					
-select * from Wishlist_info
-
-/**
-create function produkt
-    	(@nick steamid)
-        returns table
-as
-begin
-        return select id , nazwa ,wlasciciel , steamid
-		from Posiadania d join Produkty c
-		on d.produkt = c.id
-		where wlasciciel = (select steamid
-					from Klienci
-					where steamid = @nick)
-end
-
-create function wishlista
-		(@nick steamid)
-        returns table
-as
-begin
-        return select id , produkt
-		from ObiektyNaWishlist
-		where autorWishlisty = (select steamid
-					from Klienci
-					where steamid = @nick)
-end
 
 
-create function achivmon
-		(@nick steamid,
-		 @nazwagry id )
-        returns table
-as
-begin
-return select c.id as id_osiagniecia, c.nazwa as nazwa_osigniecia , c.nazwa2 as nazwa_gry
-		from (select a.nazwa, a.id, b.nazwa as nazwa2
-		from Osiagniecia a join (select *
-				from Posiadania d join Produkty c
-				on d.produkt = c.id
-				where wlasciciel = (select steamid   /** zamiast tego mozna wywolać procedure od nicku ? **/
-					from Klienci
-					where steamid = @nick)) b
-on a.idProd = b.id ) c
-where nazwa2 = @nazwagry 
-
-**/
 
 ---- Agregujace
 

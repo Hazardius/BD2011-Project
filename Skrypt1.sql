@@ -269,6 +269,9 @@ values
 ('Rogue', 'Matt Uelman', 178, 2670, 1),
 ('Sisters', 'Matt Uelman', 105, 1575, 1)
 
+insert into Gry (id)
+values (4)
+
 insert into Gry (id, ost)
 values (3, 1), (5, 2)
 
