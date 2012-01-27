@@ -44,6 +44,76 @@ go
 
 ---------- PROCEDURY
 
+create procedure dodaj_Transakcje
+       @steamidKupujacego int,
+       @idProduktu int
+AS
+begin try
+    if (@steamidKupujacego is null)
+        raiserror ('Nie podano wlasciciela koszyka!', 11, 1)
+    if (@idProduktu is null)
+        raiserror ('Nie podano pierwszego produktu z koszyka!', 11, 2)
+    if not exists (select * from Klienci
+        where (@steamidKupujacego = steamid))
+    begin
+       raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 3)
+    end
+    if not exists (select * from Produkty where (@idProduktu = id))
+    begin
+       raiserror ('Nie istnieje taki produkt!', 11, 4)
+    end
+    else
+    begin
+        declare @kupujacy varchar(40)
+        declare @cena_pierwszego int
+        declare @data datetime
+        set @kupujacy = (select nazwa_wyswietlana from Klienci where (steamid = @steamidKupujacego))
+        set @cena_pierwszego = (select cena from Produkty where (id = @idProduktu))
+        set @data = CURRENT_TIMESTAMP
+        insert into Transakcje(data, kwota_laczna, zleceniodawca)
+        values (@data, @cena_pierwszego, @kupujacy)
+
+        declare @idek int
+        set @idek = (select id from Transakcje where (kwota_laczna = @cena_pierwszego AND @kupujacy = zleceniodawca AND @data = data))
+        
+        insert into PozycjeTransakcji(produkt, transakcja)
+        values (@idProduktu, @idek)
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+
+go
+
+create procedure zmien_Transakcje
+        @dodanaCena money,
+        @idTransakcji int
+AS
+begin try
+    if (@dodanaCena is null)
+        raiserror ('Nie podano dodanej ceny!', 11, 1)
+    if (@idTransakcji is null)
+        raiserror ('Nie podano id Transakcji!', 11, 2)
+    if not exists (select * from Transakcje
+        where (@idTransakcji = id))
+    begin
+       raiserror ('Nie istnieje taka transakcja!', 11, 3)
+    end
+    else
+    begin
+        declare @nowaSumaCen money
+        set @nowaSumaCen = @dodanaCena + (Select kwota_laczna from Transakcje where @idTransakcji = id)
+
+        update Transakcje
+        set kwota_laczna = @nowaSumaCen
+        where @idTransakcji = id
+    end
+end try
+begin catch
+               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
+end catch
+
 go
 
 ---------- FUNKCJE
@@ -137,293 +207,147 @@ select * from achievement(1, 'Source SDK')
 
 go
 
----------- NIEKTORE PROCEDURY DODAJ�CE I EDYTUJ�CE
+---------- Procedura wyzwalająca inną procedurę
 
-create procedure dodaj_SDK
-       @nazwa varchar(40),
-       @cena money,
-       @wielkosc int,
-       @opis varchar(400),
-       @wersja varchar(10)
+create procedure dodaj_PozycjeTransakcji
+       @idProduktu int,
+       @idTransakcji int
 AS
 begin try
-    if (@nazwa is null)
-        raiserror ('Nie podano nazwy!', 11, 1)
-    if (@cena is null)
-        set @cena = 0
-    if (@wielkosc is null)
-        raiserror ('Nie podano wielkosci pliku!', 11, 2)
-    if exists (select * from Produkty where (nazwa = @nazwa))
-    begin
-       raiserror ('Istnieje ju� produkt o tej nazwie!', 11, 3)
-    end
+    if (@idProduktu is null)
+        raiserror ('Nie mozna dodac niczego do transakcji!', 11, 1)
+    if (@idTransakcji is null)
+        raiserror ('Nie podano do jakiej transakcji mamy dodac ten produkt!', 11, 2)
     else
     begin
-        insert into Produkty(nazwa, cena, wielkosc, opis)
-        values (@nazwa, @cena, @wielkosc, @opis)
+        insert into PozycjeTransakcji(produkt, transakcja)
+        values (@idProduktu, @idTransakcji)
         
-        declare @idek int
-        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+        declare @cena money
+        set @cena = (select cena from Produkty where id = @idProduktu)
         
-        insert into SDK(id, wersja)
-        values (@idek, @wersja)
+        exec zmien_Transakcje @cena, @idTransakcji
     end
 end try
 begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
-GO
 
-create procedure dodaj_OST
-       @nazwa varchar(40),
-       @cena money,
-       @wielkosc int,
-       @opis varchar(400),
-       @tytulPierwszegoUtworu varchar(40),
-       @autor varchar(40),
-       @dlugosc int,
-       @wielkoscSciezki int
-AS
-begin try
-    if (@nazwa is null)
-        raiserror ('Nie podano nazwy!', 11, 1)
-    if (@cena is null)
-        set @cena = 0
-    if (@wielkosc is null)
-        raiserror ('Nie podano wielkosci pliku!', 11, 2)
-    if (@tytulPierwszegoUtworu is null)
-        raiserror ('Nie podano nazwy pierwszego utworu!', 11, 3)
-    if (@wielkoscSciezki is null)
-        raiserror ('Nie podano wielkosci utworu!', 11, 4)
-    if exists (select * from Produkty where (nazwa = @nazwa))
-    begin
-       raiserror ('Istnieje ju� produkt o tej nazwie!', 11, 5)
-    end
-    if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
-    begin
-       raiserror ('Istnieje ju� utwor o tej nazwie!', 11, 6)
-    end
-    else
-    begin
-        insert into Produkty(nazwa, cena, wielkosc, opis)
-        values (@nazwa, @cena, @wielkosc, @opis)
-        
-        declare @idek int
-        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
-        
-        insert into OST(id)
-        values (@idek)
+go
 
-        insert into Utwory(tytul, autor, dlugosc, wielkosc, album)
-        values (@tytulPierwszegoUtworu, @autor, @dlugosc, @wielkoscSciezki, @idek)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+---------- Kursory (wyswietlajacy i modyfikujacy)
 
-create procedure dodaj_Gre
-       @nazwa varchar(40),
-       @cena money,
-       @wielkosc int,
-       @opis varchar(400),
-       @ost int
-AS
-begin try
-    if (@nazwa is null)
-        raiserror ('Nie podano nazwy!', 11, 1)
-    if (@cena is null)
-        set @cena = 0
-    if (@wielkosc is null)
-        raiserror ('Nie podano wielkosci pliku!', 11, 2)
-    if exists (select * from Produkty where (nazwa = @nazwa))
-    begin
-       raiserror ('Istnieje ju� produkt o tej nazwie!', 11, 3)
-    end
-    else
-    begin
-        insert into Produkty(nazwa, cena, wielkosc, opis)
-        values (@nazwa, @cena, @wielkosc, @opis)
+declare @name varchar(40)
+DECLARE klienciKursor CURSOR
+FOR  select nazwa_wyswietlana from Klienci
+OPEN klienciKursor
+print 'Zarejestrowani klienci:'
+FETCH NEXT from klienciKursor into @name
+while @@fetch_status=0
+begin
+    print @name
+    FETCH NEXT from klienciKursor into @name
+end
+CLOSE klienciKursor
+DEALLOCATE klienciKursor
 
-        declare @idek int
-        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+go
 
-        if (@ost is not null)
-        begin
-            insert into Gry(id, ost)
-            values (@idek, @ost)
-        end
-        else
-        begin
-            insert into Gry(id)
-            values (@idek)
-        end
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+DECLARE modKur CURSOR
+FOR  select * from Produkty
 
-create procedure dodaj_DLC
-       @nazwa varchar(40),
-       @cena money,
-       @wielkosc int,
-       @opis varchar(400),
-       @gra int,
-       @ost int
-AS
-begin try
-    if (@nazwa is null)
-        raiserror ('Nie podano nazwy!', 11, 1)
-    if (@cena is null)
-        set @cena = 0
-    if (@wielkosc is null)
-        raiserror ('Nie podano wielkosci pliku!', 11, 2)
-    if (@gra is null)
-        raiserror ('Nie podano gry!', 11, 3)
-    if exists (select * from Produkty where (nazwa = @nazwa))
-    begin
-       raiserror ('Istnieje ju� produkt o tej nazwie!', 11, 4)
-    end
-    if not exists (select * from Produkty where (id = @gra))
-    begin
-       raiserror ('Nie istnieje taka gra!', 11, 5)
-    end
-    else
-    begin
-        insert into Produkty(nazwa, cena, wielkosc, opis)
-        values (@nazwa, @cena, @wielkosc, @opis)
+OPEN modKur
+FETCH NEXT from modKur
+while @@fetch_status=0
+begin
+  UPDATE Produkty SET cena = cena * 0.50
+  WHERE CURRENT OF modKur
+  FETCH NEXT from modKur
+end
+CLOSE modKur
+DEALLOCATE modKur
 
-        declare @idek int
-        set @idek = (select id from Produkty where (nazwa = @nazwa AND cena = @cena AND wielkosc = @wielkosc))
+go
+---------- Zapytania
+----- Proste
 
-        insert into DLC(id, gra, ost)
-        values (@idek, @gra, @ost)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+Select * from Produkty
+    where cena < (Select AVG(cena) from Produkty)
 
-create procedure dodaj_Utwor
-       @tytulPierwszegoUtworu varchar(40),
-       @autor varchar(40),
-       @dlugosc int,
-       @wielkoscSciezki int,
-       @album int
-AS
-begin try
-    if (@tytulPierwszegoUtworu is null)
-        raiserror ('Nie podano tytu�u pierwszego utworu!', 11, 1)
-    if (@autor is null)
-        raiserror ('Nie podano autora!', 11, 2)
-    if (@wielkoscSciezki is null)
-        raiserror ('Nie podano wielkosci pliku!', 11, 3)
-    if (@album is null)
-        raiserror ('Nie podano albumu!', 11, 4)
-    if not exists (select * from OST where (id = @album))
-    begin
-       raiserror ('Istnieje ju� produkt o tej nazwie!', 11, 5)
-    end
-    if exists (select * from Utwory where (tytul = @tytulPierwszegoUtworu))
-    begin
-       raiserror ('Istnieje ju� utwor o tej nazwie!', 11, 6)
-    end
-    else
-    begin
-        insert into Utwory(tytul, autor, dlugosc, wielkosc, album)
-        values (@tytulPierwszegoUtworu, @autor, @dlugosc, @wielkoscSciezki, @album)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+go
 
-create procedure dodaj_Klienta
-       @nazwa_wyswietlana varchar(40),
-       @haslo varchar(64),
-       @data_urodzenia date
-AS
-begin try
-    if (@nazwa_wyswietlana is null)
-        raiserror ('Nie podano nazwy uzytkownika!', 11, 1)
-    if (@haslo is null)
-        raiserror ('Nie podano hasla!', 15, 2)
-    if (LEN(@nazwa_wyswietlana) < 8)
-        raiserror ('Podana nazwa jest za krotka!', 11, 3)
-    if (18 > DATEDIFF(yyyy,@data_urodzenia,CURRENT_TIMESTAMP))
-        raiserror ('Uzytkownik ma ponizej 18 lat!', 11, 4)
-    if exists (select * from Klienci where (nazwa_wyswietlana = @nazwa_wyswietlana))
-    begin
-       raiserror ('Istnieje ju� uzytkownik o tej nazwie!', 11, 5)
-    end
-    else
-    begin
-        insert into Klienci(nazwa_wyswietlana,haslo,data_urodzenia)
-        values (@nazwa_wyswietlana,@haslo,@data_urodzenia)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+----- Skorelowane
 
-create procedure dodaj_SteamWallet
-       @steamid int,
-       @kwota int
-AS
-begin try
-    if (@steamid is null)
-        raiserror ('Nie podano nazwy uzytkownika!', 11, 1)
-    if (@kwota is null)
-        set @kwota = 0
-    if not exists (select * from Klienci where (@steamid = steamid))
-    begin
-       raiserror ('Nie istnieje taki uzytkownik!', 11, 2)
-    end
-    else
-    begin
-        insert into SteamWallet (wlasciciel, kwota)
-        values (@steamid, @kwota)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+select id, nazwa, cena
+    from Produkty pro
+        where 3 > (select COUNT(*) from Produkty pod
+    where pod.cena > pro.cena)
+    order by cena desc
 
-create procedure dodaj_Osiagniecie
-       @nazwa varchar(50),
-       @opis varchar(100),
-       @id_prod int
-AS
-begin try
-    if (@nazwa is null)
-        raiserror ('Nie podano nazwy osiagniecia!', 11, 1)
-    if (@id_prod is null)
-        raiserror ('Nie podano produktu docelowego!', 11, 2)
-    if not exists (select * from Produkty where (@id_prod = id))
-    begin
-       raiserror ('Nie istnieje wybrany produkt!', 11, 3)
-    end
-    if exists (select * from Osiagniecia where (nazwa = @nazwa AND @id_prod = idProd))
-    begin
-       raiserror ('Istnieje ju� osiagniecie o tej nazwie dla wybranej gry!', 11, 4)
-    end
-    else
-    begin
-        insert into Osiagniecia(nazwa, opis, idProd)
-        values (@nazwa,@opis,@id_prod)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
+go
+
+----- Z wieloma tabelami
+
+select o.nazwa as nazwa_osiagniecia, p.nazwa as nazwa_gry
+                from Osiagniecia o, Produkty p, OsiagnieciaOdblokowane oo
+                where (o.idProd = p.id)
+                    AND (p.nazwa like '%Diablo%')
+                    AND (oo.kolekcjoner = 1)
+                    AND (oo.osiagniecie = o.nazwa)
+
+go
+
+----- Funkcje agregujace
+
+create view IluMamyKlientow(ilosc_klientow)
+as
+    select COUNT(*)
+        from Klienci
+
+go
+
+select * from IluMamyKlientow
+
+go
+
+create view IleMamyGrup(ilosc_grup)
+as
+    select COUNT(*)
+        from Grupy
+
+go
+
+select * from IleMamyGrup
+
+go
+
+create view NajdrozszeProdukty(id, nazwa, cena)
+as
+    select id, nazwa, cena
+        from Produkty
+            where cena = (select MAX(cena)
+		        from Produkty)
+
+go
+
+select * from NajdrozszeProdukty
+
+go
+
+create view NajtanszeProdukty(id, nazwa, cena)
+as			
+    select id, nazwa, cena
+        from Produkty
+            where cena = (select MIN(cena)
+				from Produkty)
+				
+go
+
+select * from NajtanszeProdukty
+
+go
+
+---------- Wiecej procedur dodajacych/aktualizujących/usuwających dane
 
 create procedure dodaj_Grupe
        @zalozyciel int,
@@ -448,7 +372,8 @@ end try
 begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
-GO
+
+go
 
 create procedure dodaj_Czlonka_Grupy
        @steamid int,
@@ -480,7 +405,8 @@ end try
 begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
-GO
+
+go
 
 create procedure dodaj_Znajomosc
        @steamidProszacego int,
@@ -513,124 +439,10 @@ end try
 begin catch
                SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
 end catch
-GO
 
-create procedure dodaj_Transakcje
-       @steamidKupujacego int,
-       @idProduktu int
-AS
-begin try
-    if (@steamidKupujacego is null)
-        raiserror ('Nie podano wlasciciela koszyka!', 11, 1)
-    if (@idProduktu is null)
-        raiserror ('Nie podano pierwszego produktu z koszyka!', 11, 2)
-    if not exists (select * from Klienci
-        where (@steamidKupujacego = steamid))
-    begin
-       raiserror ('Nie istnieje taki klient! Niepoprawne steamid!', 11, 3)
-    end
-    if not exists (select * from Produkty where (@idProduktu = id))
-    begin
-       raiserror ('Nie istnieje taki produkt!', 11, 4)
-    end
-    else
-    begin
-        declare @kupujacy varchar(40)
-        declare @cena_pierwszego int
-        declare @data datetime
-        set @kupujacy = (select nazwa_wyswietlana from Klienci where (steamid = @steamidKupujacego))
-        set @cena_pierwszego = (select cena from Produkty where (id = @idProduktu))
-        set @data = CURRENT_TIMESTAMP
-        insert into Transakcje(data, kwota_laczna, zleceniodawca)
-        values (@data, @cena_pierwszego, @kupujacy)
+go
 
-        declare @idek int
-        set @idek = (select id from Transakcje where (kwota_laczna = @cena_pierwszego AND @kupujacy = zleceniodawca AND @data = data))
-        
-        insert into PozycjeTransakcji(produkt, transakcja)
-        values (@idProduktu, @idek)
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
-
-create procedure zmien_Transakcje
-        @dodanaCena money,
-        @idTransakcji int
-AS
-begin try
-    if (@dodanaCena is null)
-        raiserror ('Nie podano dodanej ceny!', 11, 1)
-    if (@idTransakcji is null)
-        raiserror ('Nie podano id Transakcji!', 11, 2)
-    if not exists (select * from Transakcje
-        where (@idTransakcji = id))
-    begin
-       raiserror ('Nie istnieje taka transakcja!', 11, 3)
-    end
-    else
-    begin
-        declare @nowaSumaCen money
-        set @nowaSumaCen = @dodanaCena + (Select kwota_laczna from Transakcje where @idTransakcji = id)
-
-        update Transakcje
-        set kwota_laczna = @nowaSumaCen
-        where @idTransakcji = id
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
-
-create procedure dodaj_PozycjeTransakcji
-       @idProduktu int,
-       @idTransakcji int
-AS
-begin try
-    if (@idProduktu is null)
-        raiserror ('Nie mozna dodac niczego do transakcji!', 11, 1)
-    if (@idTransakcji is null)
-        raiserror ('Nie podano do jakiej transakcji mamy dodac ten produkt!', 11, 2)
-    else
-    begin
-        insert into PozycjeTransakcji(produkt, transakcja)
-        values (@idProduktu, @idTransakcji)
-        
-        declare @cena money
-        set @cena = (select cena from Produkty where id = @idProduktu)
-        
-        exec zmien_Transakcje @cena, @idTransakcji
-    end
-end try
-begin catch
-               SELECT ERROR_NUMBER() AS 'NUMER BLEDU',ERROR_MESSAGE() AS 'KOMUNIKAT'
-end catch
-GO
-
-
-
----- Agregujace
-
-select COUNT(*)
-from Klienci
-
-select COUNT(*)
-from Grupy
-
-select id, nazwa
-from Produkty
-where cena = (select MAX(cena)
-				from Produkty)
-			
-select id, nazwa
-from Produkty
-where cena = (select MIN(cena)
-				from Produkty)
-
--- Przyklad uzycia triggerow
+---------- Przyklad uzycia triggerow
 
 insert into ObiektyNaWishlist (autorWishlisty, priorytet, produkt)
 values(2, 0, 3)
@@ -644,7 +456,7 @@ where priorytet = 1
 insert into Posiadania (produkt, wlasciciel)
 values (3,2)
 
--- Przyklad uzycia INDEKSOW
+---------- Przyklad uzycia INDEKSOW
 
 select Produkty.*
 from Produkty with (index(ProduktyPoID),nolock)
